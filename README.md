@@ -54,42 +54,68 @@ is capability-free.
 >   `Decision`, and the integration that lets that decision drive the
 >   `UnderReview -> Approved` / `-> Rejected` transition. The engine is
 >   provably capability-free.
-> - **Phase 3 (this commit)** adds the **tamper-evident audit ledger and
+> - **Phase 3** adds the **tamper-evident audit ledger and
 >   information-flow control over the IBAN**: an HMAC-chained append-only
 >   ledger (`ledger.capa`), constant-time chain verification, and the
 >   `@secret` IBAN bridges (`mask.capa`) that mask and fingerprint the
 >   account through audited declassifies. It pulls in its first external
 >   dependency, the SLSA-verified `capa_hash`, and writes the ledger
 >   through an attenuated `Fs`. See [Phase 3](#phase-3-the-tamper-evident-ledger-and-iban-information-flow).
+> - **Phase 4 (this commit)** adds the **IO adapter layer** that wires the
+>   pure core to the world, each adapter holding ONE attenuated
+>   capability: `config.capa` reads policy thresholds from the
+>   environment (`Env`, `restrict_to_keys`), `intake.capa` imports a batch
+>   of claims from CSV (`Fs`, via the `capa_csv` library), `store.capa`
+>   persists claims, decisions, and ledger lines to SQLite and queries a
+>   rollup (`Db`, `restrict_to`), and `report.capa` renders the summary
+>   through a `Reporter` trait with Text / Csv / Json implementations
+>   (dynamic dispatch). The two example claims now come from a CSV
+>   fixture. See [Phase 4](#phase-4-the-io-adapter-layer).
 >
-> Later phases add the Db / Net / Proc adapters, a CLI, a test suite, and
-> the governance / SBOM pack.
+> Later phases add a CLI, a test suite, and the governance / SBOM pack.
 
 ## Running the demo
 
-From Phase 3 on, claimdesk has one external dependency (`capa_hash`).
-Vendor and verify it once with the package manager, then run:
+From Phase 3 on, claimdesk has external dependencies (`capa_hash`, and
+from Phase 4 also `capa_csv`). Vendor and verify them once with the
+package manager, then run.
+
+**Module search path.** The package's modules are imported as
+`capa_claimdesk.*`, so the directory that *contains* this repository must
+be on the module search path. The repo directory is itself named
+`capa_claimdesk`, so the simplest invocation, from inside the repo, is to
+point `CAPA_PATH` at the parent:
 
 ```sh
-capa install                    # vendors + verifies capa_hash (GPG tag + SLSA)
-capa --run main.capa
-capa --wasm --run main.capa     # identical output, byte for byte
+capa install                    # vendors + verifies capa_hash + capa_csv (GPG tag + SLSA)
+CAPA_PATH=.. capa --check main.capa
+CAPA_PATH=.. capa --run main.capa
+CAPA_PATH=.. capa --wasm --run main.capa     # identical output, byte for byte
 ```
 
-If claimdesk is checked out under a directory that is not on the default
-module search path, point `CAPA_PATH` at the parent of the repo so the
-`capa_claimdesk.*` modules resolve, e.g.
-`CAPA_PATH=/path/to/repos capa --run main.capa`.
+(More generally: `CAPA_PATH=/path/to/the/parent/of/this/repo`.) The
+vendored dependencies under `vendor/` are resolved automatically by
+`capa install`; only the `capa_claimdesk.*` package path needs
+`CAPA_PATH`. Running `capa --check main.capa` with no `CAPA_PATH` is the
+"cannot resolve import 'capa_claimdesk.money'" symptom: it means the
+parent directory is not on the search path, not that anything is broken.
 
-The run writes the audit ledger to `out/ledger.log` (gitignored). The
-`Fs` capability is attenuated to `out/` before any write, so even a
-mistargeted path could not escape that directory.
+The run reads the claim batch from `data/claims.csv` (committed fixture),
+writes the audit ledger to `out/ledger.log`, the SQLite store to
+`out/claimdesk.db`, and the CSV report to `out/report.csv` (the whole
+`out/` directory is gitignored). The `Fs` and `Db` capabilities are
+attenuated to `out/` (and the intake `Fs` to `data/`) before any access,
+so a mistargeted path could not escape those directories.
 
-Expected output (the same on both backends):
+Expected output (the same on both backends, byte for byte):
 
 ```
-claimdesk Phase 3 demo: tamper-evident ledger + IBAN information-flow
-====================================================================
+claimdesk Phase 4 demo: IO adapter layer (Env config, CSV intake, Db store, Reporter)
+==================================================================================
+
+[config]      policy from Env: total<=1000.00 EUR, Meals<=75.00 EUR, receipt>=400.00 EUR
+              Env attenuated; allows HOME outside config keys: no
+[intake]      imported 2 claim(s) from data/claims.csv
 
 [Draft]       claim C-2026-0007 opened for Alice Mendes (IBAN ************0154)
               3 lines, requested total 553.15 EUR
@@ -121,7 +147,22 @@ claimdesk Phase 3 demo: tamper-evident ledger + IBAN information-flow
 ledger written to out/ledger.log (7 entries)
 ledger verified: 7 entries, HMAC chain intact
 
-demo complete: one claim approved and paid, one rejected; ledger chained and verified.
+[store]       Db attenuated to out/; allows data/secrets.db: no
+              rollup from SQLite (parse_json of db.query):
+                APPROVED: 1 claim(s), 553.15 EUR settled
+                REJECTED: 1 claim(s), 0.00 EUR settled
+
+[report]      CSV report written to out/report.csv
+
+claimdesk processing summary
+claims:
+  C-2026-0007  APPROVED  553.15 EUR  payee ************0154
+  C-2026-0008  REJECTED  0.00 EUR  payee ************0267
+totals:
+  APPROVED: 1 claim(s), 553.15 EUR settled
+  REJECTED: 1 claim(s), 0.00 EUR settled
+
+demo complete: claims imported from CSV, processed, persisted to SQLite, reported.
 ```
 
 Each ledger line carries the masked IBAN suffix and the keyed
@@ -145,7 +186,11 @@ fingerprint, never the account, and a chain MAC over the previous line:
 | `engine.capa`  | The `Decision` sum type and the decision engine: dispatches a `List<Rule>` dynamically, folds the outcomes (via a generic `Tally<T>` / `Evaluated<T>`), and returns a `Decision`. Provably capability-free. |
 | `mask.capa`    | The audited `@secret`-to-public IBAN bridges: `mask_iban` (last-four display suffix) and `iban_fingerprint` (keyed one-way HMAC). Both keep their result `@secret`; the caller declassifies at the sink. Pure (zero capabilities). |
 | `ledger.capa`  | The append-only, HMAC-chained tamper-evident ledger: event serialization, chaining (`chain_from` / `build_chain`), constant-time verification (`verify_chain`, `mac_matches`), and persistence. Pure except `write_ledger`, which holds only `Fs`. |
-| `main.capa`    | The deterministic demo: two claims run through the lifecycle, the engine's `Decision` choosing approve-and-pay vs reject, every event chained into the ledger, the IBAN masked/fingerprinted through audited declassifies, and the chain verified in constant time at the end. |
+| `config.capa`  | **(Phase 4)** Loads the policy thresholds from the environment and builds the rule list. Holds **`Env` only**, attenuated with `restrict_to_keys` to the four `CLAIMDESK_*` config keys. Each numeric value is declassified once (an env value is `@secret` by default; a public config number is not). Fixed defaults keep the demo deterministic with no env var set. |
+| `intake.capa`  | **(Phase 4)** Imports a batch of claims from a CSV file via the `capa_csv` library (`parse_headed`), grouping rows into domain `Employee` + `ExpenseLine` values. Holds **`Fs` only** (one attenuated read); parsing is pure. The IBAN column flows into the `@secret` field, so the imported account enters the secret domain at construction. Typed `Result` errors, never a crash. |
+| `store.capa`   | **(Phase 4)** Persists claims, decisions, and ledger lines to a SQLite file and runs a per-verdict rollup query (decoded with `parse_json`). Holds **`Db` only**, attenuated with `restrict_to` to `out/`. Only the masked suffix and the keyed fingerprint are stored, never the IBAN. |
+| `report.capa`  | **(Phase 4)** A `Reporter` trait with one `render` method and three implementations (`TextReporter`, `CsvReporter` via `capa_csv` `write`, `JsonReporter` via `to_json`), chosen by name and dispatched dynamically. **Pure** (no capability): main holds the `Fs` / `Stdio` that emits the rendered String. |
+| `main.capa`    | The deterministic demo. **Phase 4 flow:** load config (`Env`) -> import claims from CSV (`Fs`) -> process each through the engine and the ledger -> persist to SQLite (`Db`) -> emit the report (`Fs` / `Stdio`). Two claims (one approved, one rejected) sourced from `data/claims.csv`; the IBAN masked/fingerprinted through audited declassifies; the chain verified in constant time. |
 
 ## The policy rule engine (Phase 2)
 
@@ -336,9 +381,10 @@ zero-capability code. `mask.capa` is pure; in `ledger.capa` only
 `write_ledger` holds `Fs` (and the verification, `verify_chain` /
 `mac_matches`, is pure). The ledger is written through an `Fs` attenuated
 with `fs.restrict_to("out/")`, so the persistence authority is bounded to
-the output directory. `capa --manifest main.capa` reports
-`declassification_sites: 2`, `mac_matches` constant-time, and no
-`Unsafe` anywhere.
+the output directory. At Phase 3 `capa --manifest main.capa` reported
+exactly **2** `declassification_sites` (both IBAN), `mac_matches`
+constant-time, and no `Unsafe` anywhere. (Phase 4 adds one more, for a
+non-sensitive config value; see below.)
 
 ### Supply chain
 
@@ -347,6 +393,100 @@ publisher key `6C1D222D491FB88031E041A536CFB426101AA24B`. `capa install`
 vendors it into `vendor/`, writes the resolved commit into `capa.lock`,
 and verifies the GPG tag signature and SLSA provenance before any check.
 `vendor/` and `capa.lock` are gitignored pre-publication.
+
+## Phase 4: the IO adapter layer
+
+Phase 4 connects the pure core (rules + engine) to the world through four
+adapter modules, each holding **one** attenuated capability. The core
+stays provably capability-free; the world is reached only through narrow,
+audited seams. The whole flow stays deterministic and byte-identical on
+both backends, generated SQLite database and CSV report included.
+
+### One capability per adapter, each attenuated
+
+`capa --manifest main.capa` (155 functions in the linked program)
+reports each adapter's authority. The split is exact:
+
+| Adapter            | Capability | Attenuation                                   |
+| ------------------ | ---------- | --------------------------------------------- |
+| `config.capa`      | `Env`      | `restrict_to_keys` to the `CLAIMDESK_*` keys  |
+| `intake.capa`      | `Fs`       | `restrict_to("data/")` (one read)             |
+| `store.capa`       | `Db`       | `restrict_to("out/")`                         |
+| `report.capa`      | *(none)*   | pure; main holds the emitting `Fs` / `Stdio`  |
+| `rules` / `engine` | *(none)*   | provably pure, unchanged from Phase 2         |
+
+The demo prints each attenuation's effect: the config `Env` reports
+`allows("HOME") = no` (a key outside the config set), and the store `Db`
+reports `allows("data/secrets.db") = no` (a path outside `out/`). The
+narrowing is monotonic and fail-closed; nothing downstream can widen it.
+
+### The flow
+
+```
+load config (Env) -> import claims from CSV (Fs) -> process each through
+the engine + ledger -> persist to SQLite (Db) -> emit report (Fs/Stdio)
+```
+
+The two example claims (one approved, one rejected) now come from the
+committed `data/claims.csv` fixture, parsed by the SLSA-verified
+`capa_csv` library. `store.capa` writes a `claims`, a `decisions`, and a
+`ledger` table and runs a `GROUP BY verdict` rollup, decoding the
+cross-backend JSON wire shape from `db.query` with `parse_json`.
+`report.capa` renders the same summary through a `Reporter` trait
+dispatched dynamically over the chosen implementation.
+
+### Information flow holds across the new sources and sinks
+
+The IBAN is `@secret`. Phase 4 adds a *source* (the CSV column) and two
+*sinks* (the SQLite store and the CSV report), and the property survives
+both:
+
+- A public CSV string flowing **into** the `@secret` `Employee.iban`
+  field is always allowed (a label only ever rises), so the imported
+  account enters the secret domain at construction and cannot reach a
+  sink without the same audited declassify the rest of the program uses.
+- The store and the report persist only the already-public minimised
+  forms (the masked suffix and the keyed fingerprint), produced by the
+  two existing IBAN declassifies in `run_claim`. They add **no** new
+  IBAN declassification site.
+
+Phase 4 adds exactly **one** new declassification site, and it is not the
+IBAN: `config.read_cents` declassifies each policy threshold read from
+the environment, with the reason *"policy threshold from environment: a
+public config number (a cents limit), not a deployment secret"*. This is
+the honest face of `Env`'s secret-by-default rule: the environment is
+where deployment secrets live, so every `env.get` is `@secret`, and a
+value that genuinely is **not** sensitive (a public limit) is asserted so
+at one auditable point. `capa --manifest main.capa` therefore reports
+`declassification_sites: 3` (one config value + the two IBAN sites) and
+still `functions_crossing_unsafe: 0`.
+
+### Supply chain (Phase 4)
+
+`capa_csv` is pinned in `capa.toml` by git tag `v0.1.1` and the same
+publisher key, vendored and verified by `capa install` exactly like
+`capa_hash`. It is pure, zero-capability code, so it does not widen the
+program's capability surface.
+
+### Two compiler gaps found while building Phase 4 (dogfooding)
+
+Both are Wasm-backend codegen gaps: the program is `capa --check`-clean
+and runs correctly under `--run`, but `--wasm --run` fails. Each was
+worked around in **claimdesk** code (not the compiler) and reported
+upstream with a minimal repro:
+
+1. **Wildcard for-pattern.** `for _ in 0..n` passes `--check` and runs on
+   Python, but `--wasm` fails with *"CIR lowering does not yet support:
+   for-pattern WildcardPat"*. `intake.capa` binds the loop index name it
+   needs anyway.
+
+2. **Attenuation over a call result.** A capability attenuation whose
+   argument is a function-call result, e.g.
+   `env.restrict_to_keys(config_keys())`, makes `--wasm` emit a
+   `local.tee $_alloc_tmp` referencing a local it never declares, so
+   `wasm-tools parse` rejects the module (*"unknown local
+   `$_alloc_tmp`"*). A direct list literal at the call site does not
+   trip it, so `config.capa` passes the key list inline.
 
 ## License
 
