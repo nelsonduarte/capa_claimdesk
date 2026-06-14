@@ -1,0 +1,13 @@
+# Normalize all text to LF on every platform so a Windows checkout
+# never rewrites source, fixtures, or signatures to CRLF. The
+# catch-all covers any file Git classifies as text; the explicit
+# entries pin the formats this project cares about.
+* text=auto eol=lf
+
+*.capa   text eol=lf
+*.md     text eol=lf
+*.toml   text eol=lf
+*.csv    text eol=lf
+*.json   text eol=lf
+*.asc    text eol=lf
+LICENSE  text eol=lf
