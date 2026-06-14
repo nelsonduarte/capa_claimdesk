@@ -1,0 +1,68 @@
+// capa_claimdesk.authz
+//
+// The payment-authorization token, modelled as a `linear type`. A
+// `DisbursementAuthorization` is the engine's proof that a specific
+// claim was approved for a specific amount and may now be paid out
+// exactly once. The linear discipline makes that "exactly once"
+// machine-checked:
+//
+//   - It cannot be duplicated: a linear value has no implicit copy, so
+//     there is no way to pay the same approval twice.
+//   - It cannot be forgotten: a linear value must be consumed before it
+//     leaves scope, so an approval can never be silently dropped and
+//     the employee left unpaid. Dropping one is a compile error.
+//
+// An authorization is minted when a claim reaches Approved and is
+// consumed when the settle transition records the payment (see
+// claim.capa). Between those two points the type system carries the
+// obligation for us.
+//
+// Zero capabilities: pure data with a linear discipline. The linear
+// check is entirely compile-time, so this runs identically under
+// `--run` and `--wasm --run`.
+
+// `amount_cents` and `currency_code` are stored as plain scalars rather
+// than a `Money` so the token is a flat, serializable record; the
+// claim that mints it has already validated the amount. `nonce` is a
+// caller-supplied reference (a ledger sequence number, a hash in a
+// later phase) that ties the authorization to a single payout event.
+pub linear type DisbursementAuthorization {
+    claim_id: String,
+    amount_cents: Int,
+    currency_code: String,
+    nonce: Int
+}
+
+/// Mint an authorization for an approved claim. The only way to obtain
+/// a `DisbursementAuthorization`; from here the linear discipline
+/// guarantees the returned token is consumed exactly once.
+pub fun authorize(claim_id: String, amount_cents: Int, currency_code: String, nonce: Int) -> DisbursementAuthorization
+    return DisbursementAuthorization {
+        claim_id: claim_id,
+        amount_cents: amount_cents,
+        currency_code: currency_code,
+        nonce: nonce
+    }
+
+/// The result of consuming an authorization: an immutable receipt that
+/// the payment was recorded. Unlike the token, the receipt is ordinary
+/// (copyable) data; it is what the rest of the system keeps as the
+/// audit trail once the one-shot authorization has been spent.
+pub type DisbursementReceipt {
+    claim_id: String,
+    amount_cents: Int,
+    currency_code: String,
+    nonce: Int
+}
+
+/// Consume an authorization, discharging the linear obligation and
+/// returning a receipt. `consume` makes this the token's terminal
+/// owner: after `settle_authorization(authz)` the caller no longer
+/// holds `authz`, and any attempt to use it again is a compile error.
+pub fun settle_authorization(consume authz: DisbursementAuthorization) -> DisbursementReceipt
+    return DisbursementReceipt {
+        claim_id: authz.claim_id,
+        amount_cents: authz.amount_cents,
+        currency_code: authz.currency_code,
+        nonce: authz.nonce
+    }

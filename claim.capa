@@ -1,0 +1,170 @@
+// capa_claimdesk.claim
+//
+// The expense claim lifecycle as a `typestate`. A claim moves through a
+// fixed protocol:
+//
+//     Draft --submit--> Submitted --start_review--> UnderReview
+//         UnderReview --approve--> Approved --settle--> Settled
+//         UnderReview --reject---> Rejected
+//
+// The state lives in the type (`Claim[Draft]`, `Claim[Approved]`, ...),
+// so the ordinary type checker enforces the protocol: a transition that
+// is not legal from the current state does not type-check, and a claim
+// value that is never carried to a terminal state is a linearity error.
+// What the compiler rejects, by construction (none of these compile):
+//
+//     approve(draft)              // approve needs Claim[UnderReview]
+//     settle(submitted, authz)    // settle needs Claim[Approved]
+//     let s = submit(draft)
+//     start_review(draft)         // draft was consumed by submit
+//     let _ = submit(draft)       // result dropped: claim abandoned
+//
+// The settle transition consumes a linear DisbursementAuthorization
+// (see authz.capa): a claim can only be settled with a freshly minted,
+// not-yet-spent payment authorization, and that authorization is spent
+// exactly here.
+//
+// Zero capabilities; the whole protocol is compile-time. Runs
+// identically under `--run` and `--wasm --run`.
+
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.authz
+
+// =========================================================
+// States
+// =========================================================
+//
+// Shared fields are carried across every state (a typestate lowers to a
+// state-indexed struct, so the fields are real slots). Fields that only
+// become meaningful in a later state hold a neutral value until then:
+//
+//   reviewer     - empty until a reviewer picks the claim up
+//   decided_by   - empty until approve/reject records the decision
+//   submitted_at - 0 until submit stamps it (a fixed tick in Phase 1;
+//                  the capa_datetime integration arrives in a later
+//                  phase, so the timeline stays deterministic here)
+//
+// Carrying them as plain fields (rather than Option) keeps `become`,
+// which preserves fields, as the single transition mechanism: a
+// transition sets the fields it owns, then re-types the value.
+
+pub typestate Claim {
+    id: String,
+    employee: Employee,
+    lines: List<ExpenseLine>,
+    currency: Currency,
+    reviewer: String,
+    decided_by: String,
+    submitted_at: Int
+}
+    Draft
+    Submitted
+    UnderReview
+    Approved
+    Rejected
+    Settled
+
+// =========================================================
+// Construction
+// =========================================================
+
+/// Open a fresh claim in Draft. The lifecycle-only fields start
+/// neutral; the transitions populate them in order.
+pub fun draft_claim(id: String, employee: Employee, lines: List<ExpenseLine>, currency: Currency) -> Claim[Draft]
+    return Claim[Draft] {
+        id: id,
+        employee: employee,
+        lines: lines,
+        currency: currency,
+        reviewer: "",
+        decided_by: "",
+        submitted_at: 0
+    }
+
+// =========================================================
+// Transitions (free functions; the compiler checks each is legal
+// only from the state in its parameter type)
+// =========================================================
+
+/// Draft -> Submitted. The employee submits the claim; `at` is the
+/// submission tick (a fixed value in Phase 1 for determinism).
+pub fun submit(consume c: Claim[Draft], at: Int) -> Claim[Submitted]
+    c.submitted_at = at
+    return become(c, Submitted)
+
+/// Submitted -> UnderReview. A reviewer picks the case up and is
+/// recorded on the claim.
+pub fun start_review(consume c: Claim[Submitted], reviewer: String) -> Claim[UnderReview]
+    c.reviewer = reviewer
+    return become(c, UnderReview)
+
+/// UnderReview -> Approved. The reviewer approves; the decider is
+/// recorded. Only a claim that is actually under review can be
+/// approved.
+pub fun approve(consume c: Claim[UnderReview], decided_by: String) -> Claim[Approved]
+    c.decided_by = decided_by
+    return become(c, Approved)
+
+/// UnderReview -> Rejected. The reviewer rejects; the decider is
+/// recorded. Rejected is terminal.
+pub fun reject(consume c: Claim[UnderReview], decided_by: String) -> Claim[Rejected]
+    c.decided_by = decided_by
+    return become(c, Rejected)
+
+/// Approved -> Settled. Records the payment by consuming a linear
+/// DisbursementAuthorization (spent exactly once) and returns the
+/// settled claim together with the immutable receipt. Only an Approved
+/// claim can be settled, and only with a fresh authorization.
+pub fun settle(consume c: Claim[Approved], consume authz: DisbursementAuthorization) -> Settlement
+    let receipt = settle_authorization(authz)
+    return Settlement {
+        claim: become(c, Settled),
+        receipt: receipt
+    }
+
+/// The product of a successful settle: the claim re-typed to Settled
+/// plus the receipt proving the one-shot authorization was spent.
+pub type Settlement {
+    claim: Claim[Settled],
+    receipt: DisbursementReceipt
+}
+
+// =========================================================
+// State-specific operations (impl Type[State]; callable only when
+// the receiver is in that state)
+// =========================================================
+
+impl Claim[Approved]
+    /// The approved total. Available only on an Approved claim: there is
+    /// no approved amount to read in any earlier state, and the type
+    /// system enforces that.
+    fun approved_total(self) -> Result<Money, MoneyError>
+        return lines_total(self.lines, self.currency)
+
+    /// The decider of record, for minting the authorization.
+    fun decided_by_name(self) -> String
+        return self.decided_by
+
+impl Claim[Settled]
+    /// Who is being paid. Available only once the claim is settled.
+    fun payee(self) -> Employee
+        return self.employee
+
+    /// Terminal sink for a settled claim: consumes the linear value,
+    /// discharging its obligation. A settled claim is the end of the
+    /// protocol; archiving it is how the lifecycle is closed out. In a
+    /// later phase this is where the ledger record is written.
+    fun archive(consume self) -> Unit
+        return ()
+
+impl Claim[Rejected]
+    /// Who rejected the claim. Available only on a Rejected claim.
+    fun rejected_by(self) -> String
+        return self.decided_by
+
+    /// Terminal sink for a rejected claim. Like `archive` on a settled
+    /// claim, it consumes the linear value so a rejected claim cannot be
+    /// silently abandoned.
+    fun discard(consume self) -> Unit
+        return ()
