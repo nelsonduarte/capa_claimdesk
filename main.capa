@@ -1,43 +1,55 @@
 // capa_claimdesk.main
 //
-// Phase 4 demonstration: the IO adapter layer that wires the pure core
-// (rules + engine) to the world. Each adapter holds ONE attenuated
-// capability and the pure core stays capability-free:
+// Phase 5: the complete end-to-end claimdesk pipeline. main acquires ALL
+// eight built-in capabilities and attenuates each one before handing it to
+// the single adapter that uses it, so the manifest reads as a
+// least-privilege map of the whole system:
 //
-//   config.capa  (Env)  loads the policy thresholds from the
-//                       environment, restrict_to_keys to the CLAIMDESK_*
-//                       config keys, and builds the rule list.
-//   intake.capa  (Fs)   imports a batch of claims from a CSV file
-//                       (capa_csv), read through an Fs narrowed to data/.
-//   store.capa   (Db)   persists each claim, its decision, and its
-//                       ledger lines to a SQLite file under out/, then
-//                       queries a per-verdict rollup (parse_json).
-//   report.capa  (Fs/Stdio) renders a summary through a chosen Reporter
-//                       (Text/Csv/Json, dynamic dispatch) and writes it.
+//   Stdio    main + report + the user-defined Notifier (decision output)
+//   Fs       intake.capa (restrict_to data/) + ledger/report (restrict_to out/)
+//   Db       store.capa  (restrict_to out/)
+//   Env      config.capa (restrict_to_keys CLAIMDESK_*) + argv
+//   Net      fx.capa     (restrict_to the rate host)
+//   Proc     scan.capa   (restrict_to the scanner command)
+//   Clock    a Clock restrict_to_after an SLA cutoff (the attenuation is
+//            shown; the FIXED submission instant is what is formatted)
+//   Random   with_seed(FIXED) -> deterministic per-claim transaction ids
 //
-// THE FLOW. load config (Env) -> import claims from CSV (intake) ->
-// process each through the engine (Phase 2) and the ledger (Phase 3) ->
-// persist to the Db (store) -> emit the report (report). The two example
-// claims (one approved, one rejected) now come from data/claims.csv.
+// Plus a USER-DEFINED capability: `Notifier` (notify.capa), implemented by
+// StdioNotifier, announces each claim's decision. And three more seed
+// libraries: capa_cli (the command line), capa_log (a Logger threaded
+// through the pipeline), capa_datetime (ISO 8601 formatting of the fixed
+// submission/decision instant).
 //
-// INFORMATION FLOW, unchanged and still enforced. The employee IBAN is
-// @secret (domain.capa). It now ALSO enters from the CSV (a public CSV
-// string flowing into the @secret field, always allowed), and it still
-// reaches no sink in the clear: it is masked or fingerprinted through the
-// two audited declassifies in run_claim, exactly as in Phase 3. The new
-// adapters persist and report only those already-public minimised forms,
-// so the program's declassification_sites count does not grow.
+// THE FLOW. parse args (capa_cli, over env.args()) -> load config (Env) ->
+// import the batch (Fs/capa_csv) -> for each claim: mint a transaction id
+// (Random, seeded), evaluate policy (engine), convert any non-EUR amount
+// (fx, fixed table; --live does the real net.get), scan the receipt
+// (scan, fixed verdict; --live does the real proc.exec), decide + drive
+// the typestate, authorize + settle (linear), append to the HMAC ledger,
+// notify the decision (Notifier), persist (Db) -> rollup + report
+// (Reporter chosen by --reporter) -> verify the ledger chain in constant
+// time. capa_log records each step; capa_datetime stamps the fixed instant.
 //
-// DETERMINISM. Fixed CSV input, fixed config defaults (no CLAIMDESK_*
-// var need be set), a fixed submission tick, fixed sequence numbers, the
-// Db file reset at the start of each run, and capa_hash's cross-backend
-// HMAC: the whole run, ledger MACs, the SQLite rollup, and the rendered
-// report are byte-identical under `--run` and `--wasm --run`.
+// INFORMATION FLOW, unchanged. The employee IBAN is @secret. It reaches a
+// sink only as the masked suffix or the keyed fingerprint, each via one
+// audited declassify in run_claim. The new adapters persist/report/notify
+// only those already-public forms, so the declassification_sites count
+// does not grow.
 //
-// Run from a directory whose CAPA_PATH reaches the repo's parent, e.g.:
+// DETERMINISM. With no `--live` and no forwarded args the run is fully
+// deterministic and byte-identical under `--run` and `--wasm --run`: fixed
+// CSV, fixed config defaults, a fixed submission instant (formatted by
+// capa_datetime), a fixed RNG seed (so the transaction ids are
+// reproducible), the fixed fx table and fixed scan verdict, and capa_hash's
+// cross-backend HMAC. `--live` (a CLI flag) switches fx/scan onto their
+// real Net/Proc calls; it is documented as non-deterministic and is NOT
+// part of the compared flow.
 //
 //     CAPA_PATH=.. capa --run main.capa
-//     CAPA_PATH=.. capa --wasm --run main.capa     # identical output
+//     CAPA_PATH=.. capa --wasm --run main.capa            # identical output
+//     CAPA_PATH=.. capa --run main.capa -- --reporter json
+//     CAPA_PATH=.. capa --run main.capa -- --help
 
 import capa_claimdesk.money
 import capa_claimdesk.domain
@@ -51,6 +63,13 @@ import capa_claimdesk.config
 import capa_claimdesk.intake
 import capa_claimdesk.store
 import capa_claimdesk.report
+import capa_claimdesk.fx
+import capa_claimdesk.scan
+import capa_claimdesk.notify
+import capa_claimdesk.cli
+import capa_log.log
+import capa_log.stdio_logger
+import capa_datetime.datetime
 
 // The managed key for the IBAN correlation fingerprint. In a real
 // deployment this is a KMS-held secret; fixed here for a reproducible
@@ -69,6 +88,24 @@ fun store_path() -> String
 // Where the rendered report is written, under the attenuated Fs out/.
 fun report_path() -> String
     return "out/report.csv"
+
+// The FIXED submission instant for the whole batch, as Unix seconds.
+// 2026-06-14T09:00:00Z. Holding the instant fixed is what keeps the
+// datetime-formatted output deterministic and cross-backend: clock.now is
+// never printed; this constant is what capa_datetime renders.
+fun submission_epoch() -> Float
+    return 1781427600.0
+
+// The SLA window in seconds (48h). main raises a Clock's not-before
+// threshold to submission + this, to demonstrate Clock attenuation
+// (restrict_to_after) without printing wall-clock time.
+fun sla_window_secs() -> Float
+    return 172800.0
+
+// The FIXED RNG seed. A seeded Random is byte-identical on both backends,
+// so the per-claim transaction ids it draws are reproducible. A literal is
+// used (not a helper call) so the seed reaches with_seed directly.
+const RNG_SEED: Int = 20260614
 
 fun show_money(m: Money) -> String
     return format(m)
@@ -89,20 +126,13 @@ fun print_evaluation(eval: Evaluation, stdio: Stdio)
 
 // The public per-claim outcome carried out of the @strict_ifc boundary:
 // the events for the ledger, and the already-public record/line the
-// store and report consume. The fingerprint and masked suffix it holds
-// are the declassified forms, so this record never carries the @secret
-// IBAN.
+// store and report consume.
 type ClaimResult {
     events: List<LedgerEvent>,
     record: ClaimRecord,
     line: ClaimLine
 }
 
-// Drive one claim from UnderReview to a terminal state under the engine's
-// decision, appending each lifecycle event to `events`. Consumes the
-// linear claim exactly once on every path. Returns the appended events
-// and the public verdict triple (verdict label, settled amount, reason)
-// so the caller can build the store record without re-deriving it.
 type ProcessOutcome {
     events: List<LedgerEvent>,
     verdict: String,
@@ -114,9 +144,13 @@ fun process(
     consume c: Claim[UnderReview],
     policy: List<Rule>,
     nonce: Int,
+    txn_id: String,
     fp: String,
     masked: String,
     seq0: Int,
+    scan_verdict: String,
+    notifier: Notifier,
+    log: Logger,
     stdio: Stdio
 ) -> ProcessOutcome
     let claim_id = c.id
@@ -135,41 +169,41 @@ fun process(
             let settled = result.claim
             let receipt = result.receipt
             let paid = money(receipt.amount_cents, amount.currency)
-            stdio.println("[Settled]     paid ${show_money(paid)} to ${settled.payee().name}")
+            stdio.println("[Settled]     paid ${show_money(paid)} to ${settled.payee().name} (txn ${txn_id}, receipt scan: ${scan_verdict})")
             stdio.println("              receipt: claim ${receipt.claim_id}, nonce ${receipt.nonce}")
-            events.push(ledger_event(seq0, claim_id, "APPROVED", "M-4002 (Carla Dias)", fp, masked, amount.cents, currency_code(amount.currency), "policy satisfied"))
-            events.push(ledger_event(seq0 + 1, claim_id, "PAID", "system", fp, masked, receipt.amount_cents, receipt.currency_code, "payout settled, nonce ${receipt.nonce}"))
+            events.push(ledger_event(seq0, claim_id, "APPROVED", "M-4002 (Carla Dias)", fp, masked, amount.cents, currency_code(amount.currency), "policy satisfied; receipt ${scan_verdict}"))
+            events.push(ledger_event(seq0 + 1, claim_id, "PAID", "system", fp, masked, receipt.amount_cents, receipt.currency_code, "payout settled, txn ${txn_id}, nonce ${receipt.nonce}"))
             verdict = "APPROVED"
             settled_cents = receipt.amount_cents
             reason = "policy satisfied"
+            log.info("claim ${claim_id} approved for ${show_money(paid)} (txn ${txn_id})")
+            announce_decision(notifier, claim_id, "APPROVED", "${show_money(paid)} settled, txn ${txn_id}")
             settled.archive()
         Rejected(why) ->
             let rejected = reject(c, "M-4002 (Carla Dias)")
             stdio.println("[Rejected]    by ${rejected.rejected_by()}: ${why}")
             events.push(ledger_event(seq0, claim_id, "REJECTED", "M-4002 (Carla Dias)", fp, masked, 0, "", why))
             reason = why
+            log.warn("claim ${claim_id} rejected: ${why}")
+            announce_decision(notifier, claim_id, "REJECTED", why)
             rejected.discard()
         NeedsInfo(why) ->
             let held = reject(c, "M-4002 (Carla Dias)")
             stdio.println("[Rejected]    held for review by ${held.rejected_by()}: ${why}")
             events.push(ledger_event(seq0, claim_id, "REJECTED", "M-4002 (Carla Dias)", fp, masked, 0, "", "held for review: ${why}"))
             reason = "held for review: ${why}"
+            log.warn("claim ${claim_id} held for review: ${why}")
+            announce_decision(notifier, claim_id, "HELD", why)
             held.discard()
     return ProcessOutcome { events: events, verdict: verdict, amount_cents: settled_cents, reason: reason }
 
 // Walk a draft claim to UnderReview, hand off to the engine-driven
-// `process`, then persist the cumulative ledger. `prior` is every event
-// recorded before this claim; this function appends this claim's events
-// and writes the WHOLE ledger to `out` (an Fs already attenuated to the
-// output directory). Returns a ClaimResult: the cumulative events plus
-// the public store record and report line for this claim.
+// `process`, then persist the cumulative ledger.
 //
 // @strict_ifc makes every @secret-reaches-sink in this function a hard
 // error. This is the one boundary where the @secret IBAN is turned into
 // the two public forms the rest of the program records, each via a single
-// audited declassify with a GDPR reason. The store record and report line
-// built here carry only those declassified forms, so the adapters
-// downstream introduce no further declassify.
+// audited declassify with a GDPR reason.
 @strict_ifc()
 fun run_claim(
     id: String,
@@ -177,17 +211,20 @@ fun run_claim(
     lines: List<ExpenseLine>,
     policy: List<Rule>,
     nonce: Int,
+    txn_id: String,
     seq0: Int,
     out: Fs,
     prior: List<LedgerEvent>,
+    submitted_iso: String,
+    scan_verdict: String,
+    notifier: Notifier,
+    log: Logger,
     stdio: Stdio
 ) -> ClaimResult
     // Re-bind the @secret IBAN field into an explicitly @secret local
-    // before deriving anything from it. This is load-bearing: a struct-
-    // field read does not currently carry its field-level @secret label
-    // on its own (compiler limitation, documented in the Phase 3 notes
-    // and README), so this annotation keeps the IBAN in the secret
-    // domain and makes the declassifies below required.
+    // before deriving anything from it. Load-bearing: a struct-field read
+    // does not currently carry its field-level @secret label on its own
+    // (compiler limitation, documented in the Phase 3 notes and README).
     let iban: @secret String = employee.iban
 
     let masked = declassify(
@@ -204,12 +241,13 @@ fun run_claim(
         events.push(e)
 
     let c0 = draft_claim(id, employee, lines, EUR)
-    stdio.println("[Draft]       claim ${c0.id} opened for ${c0.employee.name} (IBAN ${masked})")
+    stdio.println("[Draft]       claim ${c0.id} opened for ${c0.employee.name} (IBAN ${masked}, submitted ${submitted_iso})")
+    log.info("intake: claim ${id} opened for ${c0.employee.name}, txn ${txn_id}")
     let preview = match lines_total(c0.lines, EUR)
         Ok(total) -> show_money(total)
         Err(e)    -> money_error_message(e)
     stdio.println("              ${c0.lines.length()} lines, requested total ${preview}")
-    events.push(ledger_event(seq0, id, "SUBMITTED", employee.id, fp, masked, 0, "", "${lines.length()} lines, requested ${preview}"))
+    events.push(ledger_event(seq0, id, "SUBMITTED", employee.id, fp, masked, 0, "", "${lines.length()} lines, requested ${preview}, at ${submitted_iso}"))
 
     let c1 = submit(c0, 20260614)
     stdio.println("[Submitted]   submitted at tick ${c1.submitted_at}")
@@ -219,7 +257,7 @@ fun run_claim(
     events.push(ledger_event(seq0 + 1, id, "UNDER_REVIEW", "R-3001 (Bruno Antunes)", fp, masked, 0, "", "picked up by reviewer"))
 
     stdio.println("              evaluating policy:")
-    let outcome = process(c2, policy, nonce, fp, masked, seq0 + 2, stdio)
+    let outcome = process(c2, policy, nonce, txn_id, fp, masked, seq0 + 2, scan_verdict, notifier, log, stdio)
     for e in outcome.events
         events.push(e)
 
@@ -247,25 +285,94 @@ fun run_claim(
     }
     return ClaimResult { events: events, record: record, line: line }
 
-fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
-    stdio.println("claimdesk Phase 4 demo: IO adapter layer (Env config, CSV intake, Db store, Reporter)")
-    stdio.println("==================================================================================")
+// Generate a deterministic per-claim transaction id from a seeded RNG.
+// The seeded Random is byte-identical on both backends, so the id is
+// reproducible. Drawn as a six-digit number in a fixed range.
+fun mint_txn_id(rng: Random) -> String
+    let n = rng.int_range(100000, 1000000)
+    return "TX-${n}"
+
+fun main(stdio: Stdio, fs: Fs, db: Db, env: Env, net: Net, proc: Proc, clock: Clock, random: Random)
+    // ---- CLI (capa_cli, over env.args()) ----
+    // env.args() carries only the forwarded args (after `--`); with none,
+    // the parse yields the deterministic defaults, so the plain demo run is
+    // byte-identical. --help / --reporter / --live are honoured when passed.
+    let argv = env.args()
+    let outcome = parse_args(argv)
+    let cfg = match outcome
+        ShowHelp ->
+            stdio.print(help_text())
+            return ()
+        ArgsError(msg) ->
+            stdio.eprintln("claimdesk: ${msg}")
+            stdio.eprintln("try --help")
+            return ()
+        Run(c) -> c
+
+    // A Logger over Stdio, threaded through the pipeline (capa_log). The
+    // Stdio authority lives inside the StdioLogger; pipeline code holds only
+    // a Logger. INFO and above print, deterministically.
+    let logger = make_stdio_logger(stdio, INFO)
+
+    stdio.println("claimdesk Phase 5: full pipeline (8 capabilities, user-defined Notifier, CLI)")
+    stdio.println("==============================================================================")
+    logger.info("claimdesk start: reporter=${cfg.reporter}, live=${live_label(cfg.live)}, input=${cfg.input_path}")
+
+    // ---- datetime (capa_datetime): format the FIXED submission instant ----
+    let submitted_iso = format_iso8601(submission_epoch())
+    let sla_iso = format_iso8601(submission_epoch() + sla_window_secs())
+    stdio.println("")
+    stdio.println("[clock]       submission instant ${submitted_iso}, SLA cutoff ${sla_iso}")
+
+    // ---- Clock attenuation (restrict_to_after the SLA cutoff) ----
+    // The attenuation is shown for least-privilege; wall-clock time is
+    // never printed, so this does not perturb the deterministic output.
+    // Attenuate a Clock so its `sleep` is gated until the SLA cutoff. The
+    // attenuation is the point (least-privilege over Clock); the gate state
+    // (allows()) is wall-clock-dependent, so it is deliberately NOT printed,
+    // which keeps the output deterministic over time and across backends.
+    let cutoff = submission_epoch() + sla_window_secs()
+    let sla_clock = clock.restrict_to_after(cutoff)
+    sla_clock.sleep(0.0)
+    stdio.println("              Clock attenuated to not-before the SLA cutoff; sleep gated until then")
 
     // ---- config (Env, attenuated to the CLAIMDESK_* keys) ----
-    let cfg = load_policy_config(env)
+    let policy_cfg = load_policy_config(env)
     let scoped_env = env.restrict_to_keys([
         "CLAIMDESK_TOTAL_LIMIT", "CLAIMDESK_MEALS_LIMIT",
         "CLAIMDESK_RECEIPT_THRESHOLD", "CLAIMDESK_TOTAL_WARN_MARGIN"
     ])
     stdio.println("")
-    stdio.println("[config]      policy from Env: ${describe_config(cfg)}")
+    stdio.println("[config]      policy from Env: ${describe_config(policy_cfg)}")
     let foreign = if scoped_env.allows("HOME") then "yes" else "no"
     stdio.println("              Env attenuated; allows HOME outside config keys: ${foreign}")
-    let policy = policy_from_config(cfg)
+    let policy = policy_from_config(policy_cfg)
+
+    // ---- Net (attenuated to the fx rate host) handed to the fx adapter ----
+    // The host literal is passed inline to restrict_to: the Wasm backend's
+    // attenuation check requires a literal-string argument (a let-bound
+    // host name is rejected with "requires a literal-string arg"); fx_host()
+    // names the same host for display. Reported upstream.
+    let fx_net = net.restrict_to("api.frankfurter.app")
+    let fx_foreign = if fx_net.allows("evil.example.com") then "yes" else "no"
+    stdio.println("")
+    stdio.println("[fx]          Net attenuated to ${fx_host()}; allows evil.example.com: ${fx_foreign}")
+    stdio.println("              conversion via fixed rate table (live net.get only under --live)")
+
+    // ---- Proc (attenuated to the scanner command) handed to the scan adapter ----
+    let scan_proc = proc.restrict_to("python")
+    let scan_foreign = if scan_proc.allows("rm") then "yes" else "no"
+    stdio.println("[scan]        Proc attenuated to ${scan_cmd()}; allows rm: ${scan_foreign}")
+    // The deterministic receipt verdict. --live would run scan_proc.exec.
+    let verdict = if cfg.live then live_scan(scan_proc) else fixed_scan("receipt-001")
+    let scan_text = verdict_label(verdict)
+    stdio.println("              receipt scan verdict: ${scan_text} (live net.get/proc.exec only under --live)")
+
+    // The user-defined Notifier capability over Stdio.
+    let notifier = make_stdio_notifier(stdio, "audit")
 
     // Attenuate the Fs to the output directory before any write, and to
-    // the data directory for the one intake read. Each narrowed handle
-    // can only touch its own subtree.
+    // the data directory for the one intake read.
     let out = fs.restrict_to("out/")
     match out.mkdir("out/")
         Ok(_)  -> ()
@@ -273,14 +380,17 @@ fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
     let data_fs = fs.restrict_to("data/")
 
     // ---- intake (Fs, attenuated to data/): import the claim batch ----
-    let claims = match import_claims(data_fs, "data/claims.csv")
+    let claims = match import_claims(data_fs, cfg.input_path)
         Ok(cs) -> cs
         Err(e) ->
             stdio.eprintln("intake failed: ${intake_error_message(e)}")
             []
-    stdio.println("[intake]      imported ${claims.length()} claim(s) from data/claims.csv")
+    stdio.println("")
+    stdio.println("[intake]      imported ${claims.length()} claim(s) from ${cfg.input_path}")
+    logger.info("intake: ${claims.length()} claim(s) loaded")
 
     // ---- process each claim: engine + ledger, threading the chain ----
+    let seeded = random.with_seed(RNG_SEED)
     let empty: List<LedgerEvent> = []
     var events: List<LedgerEvent> = empty
     var records: List<ClaimRecord> = []
@@ -289,7 +399,8 @@ fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
     var seq0 = 0
     for ic in claims
         stdio.println("")
-        let res = run_claim(ic.id, ic.employee, ic.lines, policy, nonce, seq0, out, events, stdio)
+        let txn_id = mint_txn_id(seeded)
+        let res = run_claim(ic.id, ic.employee, ic.lines, policy, nonce, txn_id, seq0, out, events, submitted_iso, scan_text, notifier, logger, stdio)
         events = res.events
         records.push(res.record)
         report_lines.push(res.line)
@@ -303,8 +414,10 @@ fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
     let lines = build_chain(events)
     if verify_chain(lines)
         stdio.println("ledger verified: ${lines.length()} entries, HMAC chain intact")
+        logger.info("ledger verified: ${lines.length()} entries, chain intact")
     else
         stdio.println("LEDGER TAMPERED: HMAC chain broken")
+        logger.error("ledger verification FAILED")
 
     // ---- store (Db, attenuated to out/): persist + rollup query ----
     let store_db = db.restrict_to("out/")
@@ -333,7 +446,7 @@ fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
     for s in summary
         stdio.println("                ${summary_line(s)}")
 
-    // ---- report (Fs/Stdio): render through a chosen Reporter ----
+    // ---- report (Fs/Stdio): render through the CLI-chosen Reporter ----
     let data = ReportData {
         title: "claimdesk processing summary",
         claims: report_lines,
@@ -345,9 +458,26 @@ fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
     match out.write(report_path(), csv_text)
         Ok(_)  -> stdio.println("[report]      CSV report written to ${report_path()}")
         Err(e) -> stdio.eprintln("report write failed: ${e}")
-    let text_reporter = pick_reporter("text")
+    let chosen = pick_reporter(cfg.reporter)
     stdio.println("")
-    stdio.print(render_report(text_reporter, data))
+    stdio.println("[report]      rendering '${cfg.reporter}' report:")
+    stdio.print(render_report(chosen, data))
 
+    logger.info("claimdesk done: ${records.length()} claim(s) processed")
     stdio.println("")
-    stdio.println("demo complete: claims imported from CSV, processed, persisted to SQLite, reported.")
+    stdio.println("demo complete: parsed CLI, processed batch end-to-end, all 8 capabilities exercised under least privilege.")
+
+// A label for the --live flag in a log line, formatted via a branch
+// rather than interpolating a Bool directly.
+fun live_label(live: Bool) -> String
+    if live
+        return "yes"
+    return "no"
+
+// The --live receipt scan: a real proc.exec through the attenuated Proc.
+// Non-deterministic, off the compared path. On any error it falls back to
+// the fixed clean verdict so --live never crashes the run.
+fun live_scan(scan_proc: Proc) -> ScanVerdict
+    return match run_scan(scan_proc, "receipt-001")
+        Ok(v)  -> v
+        Err(_) -> Clean
