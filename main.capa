@@ -1,0 +1,91 @@
+// capa_claimdesk.main
+//
+// Phase 1 demonstration: walk one expense claim through its happy path
+// and print a readable summary of every step. The state machine, the
+// money arithmetic, and the one-shot payment authorization are all
+// exercised end to end:
+//
+//     Draft -> Submitted -> UnderReview -> Approved
+//         -> (mint DisbursementAuthorization) -> Settled (spends it)
+//
+// Everything is deterministic: fixed amounts, a fixed submission tick,
+// no clock and no randomness, so the output is byte-identical under
+// `--run` and `--wasm --run`. Later phases expand this into a real CLI
+// over the rules engine, ledger, and adapters.
+//
+// Run from the repository root:
+//
+//     capa --run main.capa
+//     capa --wasm --run main.capa     # identical output
+
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.authz
+import capa_claimdesk.claim
+
+fun show_money(m: Money) -> String
+    return format(m)
+
+fun main(stdio: Stdio)
+    stdio.println("claimdesk Phase 1 demo: expense claim lifecycle")
+    stdio.println("================================================")
+
+    // An employee with a (secret) IBAN, and a three-line travel claim.
+    let alice = employee("E-1001", "Alice Mendes", "Engineering", "PT50000201231234567890154")
+    let lines = [
+        expense_line("Lisbon -> Berlin flight", Travel, from_major(312, 40, EUR)),
+        expense_line("Two nights, conference hotel", Lodging, from_major(186, 0, EUR)),
+        expense_line("Client dinner", Meals, from_major(54, 75, EUR))
+    ]
+
+    // ---- Draft ----
+    let c0 = draft_claim("C-2026-0007", alice, lines, EUR)
+    stdio.println("")
+    stdio.println("[Draft]       claim ${c0.id} opened for ${c0.employee.name}")
+    let preview = match lines_total(c0.lines, EUR)
+        Ok(total) -> show_money(total)
+        Err(e)    -> money_error_message(e)
+    stdio.println("              ${c0.lines.length()} lines, requested total ${preview}")
+
+    // ---- Submit (Draft -> Submitted) ----
+    // Fixed tick (20260614) keeps the run deterministic; capa_datetime
+    // replaces this in a later phase.
+    let c1 = submit(c0, 20260614)
+    stdio.println("[Submitted]   submitted at tick ${c1.submitted_at}")
+
+    // ---- Start review (Submitted -> UnderReview) ----
+    let c2 = start_review(c1, "R-3001 (Bruno Antunes)")
+    stdio.println("[UnderReview] picked up by ${c2.reviewer}")
+
+    // ---- Approve (UnderReview -> Approved) ----
+    let c3 = approve(c2, "M-4002 (Carla Dias)")
+    stdio.println("[Approved]    approved by ${c3.decided_by_name()}")
+
+    // approved_total is callable only on Claim[Approved]; this is the
+    // amount the payment authorization will be minted for.
+    let approved = match c3.approved_total()
+        Ok(total) -> total
+        Err(e)    -> return stdio.eprintln("approved total failed: ${money_error_message(e)}")
+    stdio.println("              approved total ${show_money(approved)}")
+
+    // ---- Mint the one-shot payment authorization ----
+    // The linear DisbursementAuthorization can be spent exactly once,
+    // and settle below is the only thing that spends it.
+    let authz = authorize(c3.id, approved.cents, currency_code(approved.currency), 1)
+    stdio.println("              minted disbursement authorization (nonce 1)")
+
+    // ---- Settle (Approved -> Settled, spends the authorization) ----
+    let result = settle(c3, authz)
+    let settled = result.claim
+    let receipt = result.receipt
+    let paid = money(receipt.amount_cents, approved.currency)
+    let payee_name = settled.payee().name
+    stdio.println("[Settled]     paid ${show_money(paid)} to ${payee_name}")
+    stdio.println("              receipt: claim ${receipt.claim_id}, nonce ${receipt.nonce}")
+
+    // Close out the lifecycle: archive consumes the terminal Settled
+    // claim, discharging the last linear obligation.
+    settled.archive()
+
+    stdio.println("")
+    stdio.println("lifecycle complete: claim approved, authorization spent once.")
