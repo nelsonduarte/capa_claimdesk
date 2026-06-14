@@ -15,3 +15,7 @@ capa.lock
 *.wasm
 *.wat
 sbom/
+
+# Generated ledger output (recreated by `capa --run main.capa`; the
+# Fs capability is attenuated to this directory).
+out/

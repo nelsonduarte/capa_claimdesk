@@ -11,20 +11,27 @@
 #   not all up front. `capa install` vendors and lockfile-pins exactly
 #   what is reachable; declaring an unused dependency would vendor dead
 #   code and carry a phantom lockfile entry, which dilutes the
-#   supply-chain story this showcase is meant to make. Phase 1 imports
-#   no external library (the core is self-contained), so [dependencies]
-#   is intentionally empty here. The libraries the later phases will
-#   pull in, with their current published tags, are:
+#   supply-chain story this showcase is meant to make. Phase 3 (the
+#   tamper-evident audit ledger and the @secret IBAN handling) is the
+#   first phase to import an external library, so capa_hash is added
+#   here, not earlier. The libraries the remaining phases will pull in,
+#   with their current published tags, are:
 #
 #     capa_datetime  v0.1.2   submitted_at / decided_at timestamps
 #     capa_log       v0.1.2   structured audit logging (Stdio)
 #     capa_csv       v0.1.1   batch claim import / export
-#     capa_hash      v0.1.2   authorization nonce / ledger integrity
 #     capa_cli       v0.1.2   the claimdesk command-line front end
 #     capa_sbom      v0.1.0   self-audit of the engine's own capabilities
 #
 #   All are cross-backend and pinned with the publisher verify_key
 #   6C1D222D491FB88031E041A536CFB426101AA24B when added.
+#
+# capa_hash (added in Phase 3) is pure and zero-capability: it provides
+# the real HMAC-SHA256 used to chain the audit ledger and the keyed
+# IBAN fingerprint, plus the constant-time tag comparison that verifies
+# the chain. It does NOT widen the program's capability surface, so
+# least-privilege still holds; `capa install` verifies it (GPG tag
+# signature + SLSA provenance) before any check.
 #
 # capa_test is a dev-dependency: resolved only when this repository is
 # the install root (running its own tests), never when cap_claimdesk
@@ -38,7 +45,10 @@ name = "capa_claimdesk"
 version = "0.1.0"
 capa = ">=1.1.0"
 
-[dependencies]
+[dependencies.capa_hash]
+git = "https://github.com/nelsonduarte/capa_hash"
+tag = "v0.1.2"
+verify_key = "6C1D222D491FB88031E041A536CFB426101AA24B"
 
 [dev-dependencies.capa_test]
 git = "https://github.com/nelsonduarte/capa_test"
