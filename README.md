@@ -61,24 +61,39 @@ is capability-free.
 >   account through audited declassifies. It pulls in its first external
 >   dependency, the SLSA-verified `capa_hash`, and writes the ledger
 >   through an attenuated `Fs`. See [Phase 3](#phase-3-the-tamper-evident-ledger-and-iban-information-flow).
-> - **Phase 4 (this commit)** adds the **IO adapter layer** that wires the
+> - **Phase 4** adds the **IO adapter layer** that wires the
 >   pure core to the world, each adapter holding ONE attenuated
 >   capability: `config.capa` reads policy thresholds from the
 >   environment (`Env`, `restrict_to_keys`), `intake.capa` imports a batch
->   of claims from CSV (`Fs`, via the `capa_csv` library), `store.capa`
+>   of claims from CSV (`Fs`), `store.capa`
 >   persists claims, decisions, and ledger lines to SQLite and queries a
 >   rollup (`Db`, `restrict_to`), and `report.capa` renders the summary
 >   through a `Reporter` trait with Text / Csv / Json implementations
 >   (dynamic dispatch). The two example claims now come from a CSV
 >   fixture. See [Phase 4](#phase-4-the-io-adapter-layer).
+> - **Phase 5 (this commit)** completes the program **end-to-end** and
+>   exercises **all eight** built-in capabilities, a **user-defined
+>   capability**, and three more seed libraries. `main` now acquires
+>   `Stdio`, `Fs`, `Db`, `Env`, `Net`, `Proc`, `Clock`, and `Random` and
+>   **attenuates each one** before handing it to its adapter. New
+>   capabilities: `fx.capa` holds an attenuated `Net` (currency
+>   conversion), `scan.capa` an attenuated `Proc` (receipt verification),
+>   `main` a `Random` (seeded, for deterministic transaction ids) and a
+>   `Clock` (`restrict_to_after` an SLA cutoff). `notify.capa` declares a
+>   **user-defined `Notifier` capability**. The command line is driven by
+>   **capa_cli**, the pipeline is logged through **capa_log**, and a fixed
+>   submission instant is formatted by **capa_datetime**. The default run
+>   stays deterministic and byte-identical on both backends; a `--live`
+>   flag switches `fx`/`scan` onto their real network/subprocess calls.
+>   See [Phase 5](#phase-5-the-complete-pipeline).
 >
-> Later phases add a CLI, a test suite, and the governance / SBOM pack.
+> A later phase adds a test suite and the governance / SBOM pack.
 
 ## Running the demo
 
-From Phase 3 on, claimdesk has external dependencies (`capa_hash`, and
-from Phase 4 also `capa_csv`). Vendor and verify them once with the
-package manager, then run.
+claimdesk has external dependencies (`capa_hash`, `capa_csv`, and from
+Phase 5 also `capa_cli`, `capa_log`, and `capa_datetime`). Vendor and
+verify them once with the package manager, then run.
 
 **Module search path.** The package's modules are imported as
 `capa_claimdesk.*`, so the directory that *contains* this repository must
@@ -87,11 +102,26 @@ be on the module search path. The repo directory is itself named
 point `CAPA_PATH` at the parent:
 
 ```sh
-capa install                    # vendors + verifies capa_hash + capa_csv (GPG tag + SLSA)
+capa install                    # vendors + verifies every dependency (GPG tag + SLSA)
 CAPA_PATH=.. capa --check main.capa
 CAPA_PATH=.. capa --run main.capa
 CAPA_PATH=.. capa --wasm --run main.capa     # identical output, byte for byte
 ```
+
+The command line is parsed by `capa_cli` over `env.args()`; arguments are
+forwarded after `--`:
+
+```sh
+CAPA_PATH=.. capa --run main.capa -- --help
+CAPA_PATH=.. capa --run main.capa -- --reporter json
+CAPA_PATH=.. capa --run main.capa -- --reporter csv
+CAPA_PATH=.. capa --run main.capa -- --input data/claims.csv
+CAPA_PATH=.. capa --run main.capa -- --live    # real Net/Proc calls (non-deterministic)
+```
+
+With no forwarded arguments the parse yields the deterministic defaults
+(`--reporter text`, no `--live`), so the plain `--run` / `--wasm --run`
+invocations above are byte-identical.
 
 (More generally: `CAPA_PATH=/path/to/the/parent/of/this/repo`.) The
 vendored dependencies under `vendor/` are resolved automatically by
@@ -107,17 +137,30 @@ writes the audit ledger to `out/ledger.log`, the SQLite store to
 attenuated to `out/` (and the intake `Fs` to `data/`) before any access,
 so a mistargeted path could not escape those directories.
 
-Expected output (the same on both backends, byte for byte):
+Expected output of the default run (the same on both backends, byte for
+byte):
 
 ```
-claimdesk Phase 4 demo: IO adapter layer (Env config, CSV intake, Db store, Reporter)
-==================================================================================
+claimdesk Phase 5: full pipeline (8 capabilities, user-defined Notifier, CLI)
+==============================================================================
+[INFO] claimdesk start: reporter=text, live=no, input=data/claims.csv
+
+[clock]       submission instant 2026-06-14T09:00:00Z, SLA cutoff 2026-06-16T09:00:00Z
+              Clock attenuated to not-before the SLA cutoff; sleep gated until then
 
 [config]      policy from Env: total<=1000.00 EUR, Meals<=75.00 EUR, receipt>=400.00 EUR
               Env attenuated; allows HOME outside config keys: no
-[intake]      imported 2 claim(s) from data/claims.csv
 
-[Draft]       claim C-2026-0007 opened for Alice Mendes (IBAN ************0154)
+[fx]          Net attenuated to api.frankfurter.app; allows evil.example.com: no
+              conversion via fixed rate table (live net.get only under --live)
+[scan]        Proc attenuated to python; allows rm: no
+              receipt scan verdict: clean (live net.get/proc.exec only under --live)
+
+[intake]      imported 2 claim(s) from data/claims.csv
+[INFO] intake: 2 claim(s) loaded
+
+[Draft]       claim C-2026-0007 opened for Alice Mendes (IBAN ************0154, submitted 2026-06-14T09:00:00Z)
+[INFO] intake: claim C-2026-0007 opened for Alice Mendes, txn TX-989803
               3 lines, requested total 553.15 EUR
 [Submitted]   submitted at tick 20260614
 [UnderReview] picked up by R-3001 (Bruno Antunes)
@@ -128,10 +171,13 @@ claimdesk Phase 4 demo: IO adapter layer (Env config, CSV intake, Db store, Repo
               - receipt-required: pass
               - duplicate-line: pass
               => APPROVED for 553.15 EUR
-[Settled]     paid 553.15 EUR to Alice Mendes
+[Settled]     paid 553.15 EUR to Alice Mendes (txn TX-989803, receipt scan: clean)
               receipt: claim C-2026-0007, nonce 1
+[INFO] claim C-2026-0007 approved for 553.15 EUR (txn TX-989803)
+[notify:audit] C-2026-0007 APPROVED -- 553.15 EUR settled, txn TX-989803
 
-[Draft]       claim C-2026-0008 opened for Bruno Costa (IBAN ************0267)
+[Draft]       claim C-2026-0008 opened for Bruno Costa (IBAN ************0267, submitted 2026-06-14T09:00:00Z)
+[INFO] intake: claim C-2026-0008 opened for Bruno Costa, txn TX-484297
               4 lines, requested total 153.00 EUR
 [Submitted]   submitted at tick 20260614
 [UnderReview] picked up by R-3001 (Bruno Antunes)
@@ -143,9 +189,12 @@ claimdesk Phase 4 demo: IO adapter layer (Env config, CSV intake, Db store, Repo
               - duplicate-line: fail: duplicate line: "Taxi to venue" appears twice
               => REJECTED: Meals subtotal 108.00 EUR exceeds 75.00 EUR; duplicate line: "Taxi to venue" appears twice
 [Rejected]    by M-4002 (Carla Dias): Meals subtotal 108.00 EUR exceeds 75.00 EUR; duplicate line: "Taxi to venue" appears twice
+[WARN] claim C-2026-0008 rejected: Meals subtotal 108.00 EUR exceeds 75.00 EUR; duplicate line: "Taxi to venue" appears twice
+[notify:audit] C-2026-0008 REJECTED -- Meals subtotal 108.00 EUR exceeds 75.00 EUR; duplicate line: "Taxi to venue" appears twice
 
 ledger written to out/ledger.log (7 entries)
 ledger verified: 7 entries, HMAC chain intact
+[INFO] ledger verified: 7 entries, chain intact
 
 [store]       Db attenuated to out/; allows data/secrets.db: no
               rollup from SQLite (parse_json of db.query):
@@ -154,6 +203,7 @@ ledger verified: 7 entries, HMAC chain intact
 
 [report]      CSV report written to out/report.csv
 
+[report]      rendering 'text' report:
 claimdesk processing summary
 claims:
   C-2026-0007  APPROVED  553.15 EUR  payee ************0154
@@ -161,9 +211,17 @@ claims:
 totals:
   APPROVED: 1 claim(s), 553.15 EUR settled
   REJECTED: 1 claim(s), 0.00 EUR settled
+[INFO] claimdesk done: 2 claim(s) processed
 
-demo complete: claims imported from CSV, processed, persisted to SQLite, reported.
+demo complete: parsed CLI, processed batch end-to-end, all 8 capabilities exercised under least privilege.
 ```
+
+The `[INFO]` / `[WARN]` lines come from a `capa_log` `Logger` threaded
+through the pipeline; the `[notify:audit]` lines from the user-defined
+`Notifier`; the ISO 8601 instants from `capa_datetime` (formatting a
+fixed submission time, never wall-clock); and the `TX-` transaction ids
+from a seeded `Random` (so they are reproducible across runs and
+backends).
 
 Each ledger line carries the masked IBAN suffix and the keyed
 fingerprint, never the account, and a chain MAC over the previous line:
@@ -187,10 +245,14 @@ fingerprint, never the account, and a chain MAC over the previous line:
 | `mask.capa`    | The audited `@secret`-to-public IBAN bridges: `mask_iban` (last-four display suffix) and `iban_fingerprint` (keyed one-way HMAC). Both keep their result `@secret`; the caller declassifies at the sink. Pure (zero capabilities). |
 | `ledger.capa`  | The append-only, HMAC-chained tamper-evident ledger: event serialization, chaining (`chain_from` / `build_chain`), constant-time verification (`verify_chain`, `mac_matches`), and persistence. Pure except `write_ledger`, which holds only `Fs`. |
 | `config.capa`  | **(Phase 4)** Loads the policy thresholds from the environment and builds the rule list. Holds **`Env` only**, attenuated with `restrict_to_keys` to the four `CLAIMDESK_*` config keys. Each numeric value is declassified once (an env value is `@secret` by default; a public config number is not). Fixed defaults keep the demo deterministic with no env var set. |
-| `intake.capa`  | **(Phase 4)** Imports a batch of claims from a CSV file via the `capa_csv` library (`parse_headed`), grouping rows into domain `Employee` + `ExpenseLine` values. Holds **`Fs` only** (one attenuated read); parsing is pure. The IBAN column flows into the `@secret` field, so the imported account enters the secret domain at construction. Typed `Result` errors, never a crash. |
+| `intake.capa`  | **(Phase 4/5)** Imports a batch of claims from a CSV file, grouping rows into domain `Employee` + `ExpenseLine` values. Holds **`Fs` only** (one attenuated read); parsing is pure. The IBAN column flows into the `@secret` field, so the imported account enters the secret domain at construction. Phase 5 parses the (simple, unquoted) CSV with a small local header reader so it no longer pulls `capa_csv.parse`; see the dogfooding note below. Typed `Result` errors, never a crash. |
 | `store.capa`   | **(Phase 4)** Persists claims, decisions, and ledger lines to a SQLite file and runs a per-verdict rollup query (decoded with `parse_json`). Holds **`Db` only**, attenuated with `restrict_to` to `out/`. Only the masked suffix and the keyed fingerprint are stored, never the IBAN. |
-| `report.capa`  | **(Phase 4)** A `Reporter` trait with one `render` method and three implementations (`TextReporter`, `CsvReporter` via `capa_csv` `write`, `JsonReporter` via `to_json`), chosen by name and dispatched dynamically. **Pure** (no capability): main holds the `Fs` / `Stdio` that emits the rendered String. |
-| `main.capa`    | The deterministic demo. **Phase 4 flow:** load config (`Env`) -> import claims from CSV (`Fs`) -> process each through the engine and the ledger -> persist to SQLite (`Db`) -> emit the report (`Fs` / `Stdio`). Two claims (one approved, one rejected) sourced from `data/claims.csv`; the IBAN masked/fingerprinted through audited declassifies; the chain verified in constant time. |
+| `report.capa`  | **(Phase 4)** A `Reporter` trait with one `render` method and three implementations (`TextReporter`, `CsvReporter` via `capa_csv` `write`, `JsonReporter` via `to_json`), chosen by name and dispatched dynamically. **Pure** (no capability): main holds the `Fs` / `Stdio` that emits the rendered String. The CLI's `--reporter` selects the format. |
+| `fx.capa`      | **(Phase 5)** Foreign-exchange conversion of a claim amount into the settlement currency. Holds **`Net` only**, attenuated to the rate host. The default path converts with a fixed integer rate table (pure, deterministic); `fetch_rate_to_eur` does a real `net.get` to the attenuated host under `--live`. |
+| `scan.capa`    | **(Phase 5)** Receipt-attachment verification. Holds **`Proc` only**, attenuated to the scanner command. The default path returns a fixed `Clean` verdict (pure, deterministic); `run_scan` does a real `proc.exec` of the attenuated command under `--live`. |
+| `notify.capa`  | **(Phase 5)** A **user-defined `Notifier` capability** and a `StdioNotifier` implementor + factory (a cap-bearing struct wrapping `Stdio`). Announces each claim decision. The pipeline holds only a `Notifier`, so its whole authority there is "notify". |
+| `cli.capa`     | **(Phase 5)** The command-line front end, built on the **`capa_cli`** library (`ArgSchema` / `parse` / `format_help`). Pure: turns `env.args()` into a typed `RunConfig` (`--input` / `--reporter` / `--live` / `--help`) or a help / error outcome. |
+| `main.capa`    | The deterministic demo, now end-to-end. **Phase 5 flow:** parse the CLI (`capa_cli`) -> load config (`Env`) -> import the batch (`Fs`) -> for each claim mint a transaction id (`Random`, seeded), evaluate (engine), convert currency (`fx`/`Net`), scan the receipt (`scan`/`Proc`), decide + drive the typestate, settle (linear), append to the HMAC ledger, notify (`Notifier`), persist (`Db`) -> rollup + report (the CLI-chosen `Reporter`) -> verify the chain in constant time. `main` acquires **all eight** capabilities and attenuates each before handing it on; a `capa_log` `Logger` records each step and `capa_datetime` stamps a fixed instant. |
 
 ## The policy rule engine (Phase 2)
 
@@ -487,6 +549,144 @@ upstream with a minimal repro:
    `wasm-tools parse` rejects the module (*"unknown local
    `$_alloc_tmp`"*). A direct list literal at the call site does not
    trip it, so `config.capa` passes the key list inline.
+
+## Phase 5: the complete pipeline
+
+Phase 5 finishes the program. `main` now acquires **all eight** built-in
+capabilities and **attenuates each one** before handing it to the single
+adapter that uses it, so `capa --manifest` reads as a least-privilege map
+of the whole system. It also adds a **user-defined capability**, a real
+command line, structured logging, and date formatting, all
+cross-backend.
+
+### All eight capabilities, each attenuated at the point of use
+
+`capa --manifest main.capa` (205 functions in the linked program) reports
+the split exactly:
+
+| Capability | Held by                        | Attenuation                                   |
+| ---------- | ------------------------------ | --------------------------------------------- |
+| `Stdio`    | `main`, `report`, `Notifier`   | the console sink                              |
+| `Fs`       | `intake` / `ledger` / `report` | `restrict_to("data/")` (read), `restrict_to("out/")` (writes) |
+| `Db`       | `store`                        | `restrict_to("out/")`                         |
+| `Env`      | `config`                       | `restrict_to_keys` to the `CLAIMDESK_*` keys  |
+| `Net`      | `fx`                           | `restrict_to("api.frankfurter.app")`          |
+| `Proc`     | `scan`                         | `restrict_to("python")` (the scanner command) |
+| `Clock`    | `main`                         | `restrict_to_after` the SLA cutoff            |
+| `Random`   | `main`                         | `with_seed(20260614)` (deterministic ids)     |
+
+The demo prints each attenuation's effect (`allows("evil.example.com") =
+no` for the fx `Net`, `allows("rm") = no` for the scan `Proc`, and so on):
+the narrowing is monotonic and fail-closed. The pure core is unchanged:
+`evaluate_claim` still excludes every capability.
+
+```json
+{
+  "summary": {
+    "total_functions": 205,
+    "functions_crossing_unsafe": 0,
+    "declassification_sites": 3
+  },
+  "user_defined_capabilities": [
+    { "name": "Notifier", "methods": ["notify"], "implementors": ["StdioNotifier"] },
+    { "name": "Logger",   "methods": ["log","debug","info","warn","error"], "implementors": ["StdioLogger"] }
+  ]
+}
+```
+
+```
+evaluate_claim  -> provably excludes Clock Db Env Fs Logger Net Notifier Proc Random Stdio Unsafe
+mac_matches     -> constant_time: true
+run_claim       -> @strict_ifc, holds exactly Fs Notifier Logger Stdio
+main            -> holds Stdio Fs Db Env Net Proc Clock Random
+```
+
+`declassification_sites` is still **3** (one config value plus the two
+IBAN sites), `functions_crossing_unsafe` is **0**, the ledger's
+`mac_matches` is still **constant-time**, and the claim lifecycle is one
+**protocol state** machine.
+
+### A user-defined capability
+
+`notify.capa` declares `capability Notifier` with a single `notify`
+method, and `StdioNotifier` implements it over a wrapped `Stdio` (the
+cap-bearing-struct relaxation). `make_stdio_notifier` is the factory that
+hands the `Stdio` authority over once; downstream the pipeline holds only
+a `Notifier`, so the decision-notification step cannot print anything,
+anywhere, or reach any other capability. A real deployment swaps in an
+`EmailNotifier` (wrapping `Net`) without touching the pipeline.
+
+### Exercising non-deterministic capabilities deterministically
+
+`Net` and `Proc` are real, non-deterministic capabilities; the demo keeps
+the default flow deterministic without giving up least-privilege:
+
+- **`Random`** is exercised deterministically by construction:
+  `with_seed(20260614)` produces a byte-identical sequence on both
+  backends, so the per-claim `TX-` transaction ids are reproducible.
+- **`Clock`** is attenuated (`restrict_to_after` the SLA cutoff) to show
+  the gating, but wall-clock time is never printed; `capa_datetime`
+  formats a **fixed** submission instant instead, so the output does not
+  drift over time or between backends.
+- **`Net`** (`fx`) and **`Proc`** (`scan`) hold their capability
+  attenuated and contain the real `net.get` / `proc.exec` calls, but the
+  default flow uses fixed data (a fixed rate table, a fixed `Clean`
+  verdict) and makes **no** network or subprocess call. A `--live` flag
+  switches them onto the real calls; that path is documented as
+  non-deterministic and is deliberately **not** part of the compared,
+  byte-identical flow. The manifest still proves that `fx` holds a `Net`
+  attenuated to the rate host and `scan` a `Proc` attenuated to the
+  scanner command, and that the real calls exist.
+
+This is the honest trade: the manifest shows the full least-privilege
+surface and the real capability-bearing code, while the default demo
+stays reproducible cross-backend.
+
+### Three more seed libraries
+
+| Library         | Tag      | Used for                                                      |
+| --------------- | -------- | ------------------------------------------------------------ |
+| `capa_cli`      | `v0.1.2` | the command line (`ArgSchema` / `parse` / `format_help`)     |
+| `capa_log`      | `v0.1.2` | a `Logger` capability threaded through the pipeline          |
+| `capa_datetime` | `v0.1.2` | ISO 8601 formatting of the fixed submission/decision instant |
+
+All three are pinned by git tag and the same publisher key, vendored and
+verified by `capa install`. `capa_cli` and `capa_datetime` are
+zero-capability; `capa_log`'s `Logger` is a user-defined capability over
+`Stdio`, so it does not widen the built-in surface.
+
+### Compiler findings while building Phase 5 (dogfooding)
+
+All are `capa --check`-clean; each was worked around in **claimdesk**
+code (never the compiler) and reported upstream with a minimal repro:
+
+1. **Two dependencies cannot both export a top-level name.** `capa_cli`
+   and `capa_csv` both declare a `pub fun parse`. The loader links every
+   imported module's `pub` items into one flat global namespace, and
+   `import x as alias` is parsed but **ignored at link time**, so the two
+   libraries cannot coexist: linking `capa_cli.parser` with
+   `capa_csv.parse` is a hard *"name conflict: 'parse'"*. There is no
+   selective- or qualified-import escape hatch. Workaround: `intake.capa`
+   parses the simple, unquoted claim CSV with a small local header reader
+   (so it no longer pulls `capa_csv.parse`), while `report.capa` keeps
+   `capa_csv`'s `write` / `model` (which export no `parse`). Both
+   libraries stay verified dependencies. The same flat namespace also
+   means **sum-type variant names are global**: a local `Fail` variant
+   collided with the rule engine's `Fail`, so the CLI's outcome type uses
+   `ArgsError`.
+
+2. **Wasm attenuation requires a literal-string argument.** On the Wasm
+   backend, `net.restrict_to(host)` / `proc.restrict_to(cmd)` with a
+   *let-bound* host or command name are rejected at emit time with
+   *"--wasm: Wasm attenuation check requires a literal-string arg"*. The
+   string-prefix attenuations therefore take an inline string literal at
+   the call site (`net.restrict_to("api.frankfurter.app")`); a helper
+   names the same value for display. (A `Float` argument to
+   `clock.restrict_to_after` is unaffected.)
+
+3. The **Phase 4** Wasm gaps still apply and are still worked around: the
+   wildcard for-pattern (`for _ in 0..n`) and attenuation over a function
+   **call result** (both above).
 
 ## License
 
