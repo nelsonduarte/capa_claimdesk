@@ -85,6 +85,20 @@ git = "https://github.com/nelsonduarte/capa_datetime"
 tag = "v0.1.2"
 verify_key = "6C1D222D491FB88031E041A536CFB426101AA24B"
 
+# capa_sbom (added in Phase 7, the governance phase) is pure and
+# zero-capability: a CycloneDX / SPDX parser and a set of read-only
+# queries over the parsed model. The standalone governance/audit.capa
+# imports it to close the loop, reading capa_claimdesk's own emitted
+# CycloneDX SBOM back in and checking a governance policy against it
+# (the pure core declares no capabilities; only authorized functions
+# reach Net). It is NOT reachable from main.capa, so it does not appear
+# in the program's own manifest/SBOM and does not widen its capability
+# surface; it is the eighth seed library this showcase exercises.
+[dependencies.capa_sbom]
+git = "https://github.com/nelsonduarte/capa_sbom"
+tag = "v0.1.0"
+verify_key = "6C1D222D491FB88031E041A536CFB426101AA24B"
+
 [dev-dependencies.capa_test]
 git = "https://github.com/nelsonduarte/capa_test"
 tag = "v0.1.1"

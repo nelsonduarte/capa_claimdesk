@@ -10,4 +10,13 @@
 *.csv    text eol=lf
 *.json   text eol=lf
 *.asc    text eol=lf
+*.sh     text eol=lf
 LICENSE  text eol=lf
+
+# The governance pack's reproducibility inputs, pinned LF for defence
+# in depth: even if the catch-all above were ever loosened, the epoch
+# value generate.sh reads must stay a clean decimal and the script body
+# must be byte-stable so the rebuild diffs empty. The five emitted
+# artefacts are covered by the *.json rule.
+governance/SOURCE_DATE_EPOCH text eol=lf
+governance/generate.sh       text eol=lf
