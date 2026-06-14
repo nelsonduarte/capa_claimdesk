@@ -1,0 +1,225 @@
+// capa_claimdesk.ledger
+//
+// The append-only, tamper-evident audit ledger. Every relevant claim
+// lifecycle event (submitted, put under review, approved, rejected,
+// paid) becomes one ledger entry, and the entries are chained by
+// HMAC-SHA256 so that altering any past event breaks every chain value
+// after it. Two security properties are enforced here by two different
+// mechanisms:
+//
+//   1. INTEGRITY (tamper-evidence). Each entry carries a chain MAC over
+//      the previous chain value concatenated with the serialized event:
+//
+//          chain[i] = HMAC(key, chain[i-1] || "|" || event_i)
+//
+//      anchored to a fixed genesis. Editing or deleting an earlier event
+//      changes its serialization, so every downstream MAC fails to
+//      recompute. `verify_chain` re-derives the whole chain and compares
+//      each link in CONSTANT TIME (strings_equal from capa_hash, not
+//      `==`), so a verifier on an untrusted host leaks no timing oracle
+//      about where a forgery first diverges.
+//
+//   2. CONFIDENTIALITY (no IBAN in the clear). A LedgerEvent carries
+//      only public fields: ids, public amounts, the masked IBAN suffix,
+//      and the declassified employee fingerprint. Because the ledger is
+//      written through Fs.write, a @secret value reaching the ledger
+//      content is an information-flow violation the compiler reports.
+//      The raw IBAN never appears; the only IBAN-derived data present is
+//      what mask.capa minimised and what main.capa declassified at the
+//      sink, each with a recorded reason.
+//
+// Capabilities: chain construction and verification are PURE (capa_hash
+// is zero-capability). Only `write_ledger` declares `Fs`, and nothing
+// else: the SBOM proves the ledger cannot reach the network. Identical
+// under `--run` and `--wasm --run` (capa_hash is cross-backend, so the
+// MACs match byte-for-byte on both).
+
+import capa_hash.hmac
+import capa_hash.verify
+
+// The chain key. In a real deployment this is a managed secret in a KMS;
+// here it is a fixed constant so the demo ledger is byte-reproducible
+// across runs and backends. It keys the HMAC chain, not the IBAN
+// fingerprint (mask.capa keys that separately).
+const CHAIN_KEY: String = "claimdesk-ledger-chain-key-v1"
+
+// The genesis anchor: the previous-chain value of the very first entry.
+// Fixed and public, so the whole chain is reproducible.
+const GENESIS: String = "GENESIS"
+
+// =========================================================
+// Events
+// =========================================================
+//
+// One lifecycle event, all public by construction. `employee_fp` is the
+// declassified keyed IBAN fingerprint (a one-way value, not the IBAN);
+// `payee_masked` is the masked IBAN suffix for display. Both are
+// produced and declassified by the caller (main.capa) at the sink, with
+// stated reasons, before an event is ever built here. `amount_cents`
+// and `currency` are 0 / "" for events with no monetary amount (e.g. a
+// submission), keeping the record a flat, serializable row.
+
+pub type LedgerEvent {
+    seq: Int,                 // monotonic sequence number (deterministic)
+    claim_id: String,
+    action: String,           // SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED | PAID
+    actor: String,            // who caused the event (reviewer, system)
+    employee_fp: String,      // declassified keyed IBAN fingerprint
+    payee_masked: String,     // declassified masked IBAN suffix
+    amount_cents: Int,        // 0 when not applicable
+    currency: String,         // "" when not applicable
+    detail: String            // public human-readable note
+}
+
+/// Build a lifecycle event. Every field is public; the IBAN-derived
+/// fields must already be the masked / declassified forms from the
+/// caller, never the raw secret.
+pub fun ledger_event(
+    seq: Int,
+    claim_id: String,
+    action: String,
+    actor: String,
+    employee_fp: String,
+    payee_masked: String,
+    amount_cents: Int,
+    currency: String,
+    detail: String
+) -> LedgerEvent
+    return LedgerEvent {
+        seq: seq,
+        claim_id: claim_id,
+        action: action,
+        actor: actor,
+        employee_fp: employee_fp,
+        payee_masked: payee_masked,
+        amount_cents: amount_cents,
+        currency: currency,
+        detail: detail
+    }
+
+/// Canonical serialization of an event: a single deterministic line
+/// with a fixed field order and separator. The chain MAC is computed
+/// over this exact string, so the serialization IS the tamper surface:
+/// changing any field changes the bytes hashed.
+///
+/// Built in two halves and joined: the Wasm backend caps a single
+/// FormatStr at 8 value parts, and this row has nine fields, so the
+/// interpolation is split rather than widened. The bytes are identical
+/// on both backends.
+pub fun serialize_event(e: LedgerEvent) -> String
+    let head = "${e.seq}|${e.claim_id}|${e.action}|${e.actor}"
+    let tail = "fp=${e.employee_fp}|payee=${e.payee_masked}|${e.amount_cents}|${e.currency}|${e.detail}"
+    return "${head}|${tail}"
+
+// =========================================================
+// Chaining
+// =========================================================
+
+/// The chain MAC for one entry: HMAC over (prev_chain || "|" || body)
+/// under the chain key. capa_hash takes (key, message) in that order.
+pub fun chain_mac(prev_chain: String, body: String) -> String
+    return hmac_sha256_hex_utf8(CHAIN_KEY, "${prev_chain}|${body}")
+
+// One rendered ledger line: a built chain entry pairing the body with
+// the chain MAC that covers it. The lines form a verifiable sequence.
+pub type LedgerLine {
+    body: String,
+    chain: String
+}
+
+/// One chained line: serialize the event, fold in the previous chain
+/// value, and attach the new chain MAC.
+pub fun format_line(prev_chain: String, e: LedgerEvent) -> LedgerLine
+    let body = serialize_event(e)
+    return LedgerLine { body: body, chain: chain_mac(prev_chain, body) }
+
+/// Build the full chained ledger from a list of events. Each line's
+/// chain MAC threads into the next, anchoring the sequence to GENESIS.
+pub fun build_chain(events: List<LedgerEvent>) -> List<LedgerLine>
+    return chain_from(GENESIS, events).lines
+
+/// The result of chaining a segment of events onto an existing chain:
+/// the new lines plus the chain value to feed the next segment.
+pub type ChainSegment {
+    lines: List<LedgerLine>,
+    next_prev: String
+}
+
+/// Chain a segment of events onto an existing chain value. Threads each
+/// line's MAC into the next and returns the trailing chain value, so a
+/// caller can persist the ledger incrementally (one claim at a time)
+/// while keeping a single, unbroken chain anchored to GENESIS. The
+/// genesis anchor for the first segment is the public `GENESIS` constant.
+pub fun chain_from(prev_chain: String, events: List<LedgerEvent>) -> ChainSegment
+    var lines: List<LedgerLine> = []
+    var prev = prev_chain
+    for e in events
+        let line = format_line(prev, e)
+        lines.push(line)
+        prev = line.chain
+    return ChainSegment { lines: lines, next_prev: prev }
+
+// =========================================================
+// Verification (constant-time)
+// =========================================================
+//
+// Re-derive the chain from the stored bodies and compare each stored
+// MAC against the recomputed one. The comparison is the security-
+// sensitive step: comparing a MAC with `==` short-circuits at the first
+// differing byte (CWE-208), so an attacker who can time the verifier
+// learns a prefix oracle and can forge a MAC byte by byte. The fix is
+// `strings_equal` from capa_hash, which looks at every byte with no
+// early return; it carries the `@constant_time()` marker, so the
+// analyzer proves no @secret value steers a branch inside it.
+
+/// True iff a stored MAC matches the recomputed one, compared in
+/// constant time. This wrapper is itself marked @constant_time(): the
+/// MAC bytes are not branched on (the only branch, on length, is over
+/// public tag length, which leaks nothing). The Bool it returns is the
+/// function's RESULT, not a control-flow decision.
+@constant_time()
+pub fun mac_matches(stored: String, recomputed: String) -> Bool
+    return strings_equal(stored, recomputed)
+
+/// Verify the integrity of a chain of ledger lines. Walks from GENESIS,
+/// recomputes each link's MAC over the stored body and the previous
+/// chain value, and returns false on the first mismatch. The per-link
+/// MAC equality is constant-time; the loop control (advancing on a
+/// matched, public chain value) is ordinary. Tampering with any stored
+/// body or MAC makes this return false.
+pub fun verify_chain(lines: List<LedgerLine>) -> Bool
+    var prev = GENESIS
+    for line in lines
+        let expected = chain_mac(prev, line.body)
+        if not mac_matches(line.chain, expected)
+            return false
+        // Advance using the STORED chain value, so a tampered MAC that
+        // somehow matched would still have to chain forward correctly.
+        prev = line.chain
+    return true
+
+// =========================================================
+// Rendering and persistence
+// =========================================================
+
+/// Render one ledger line to its on-disk text form.
+pub fun render_line(line: LedgerLine) -> String
+    return "${line.body}|chain=${line.chain}"
+
+/// Render the whole ledger to a single newline-terminated string. Pure;
+/// the caller hands this to Fs.write (or prints it). Public by
+/// construction.
+pub fun render_chain(lines: List<LedgerLine>) -> String
+    var content = ""
+    for line in lines
+        content = "${content}${render_line(line)}\n"
+    return content
+
+/// Persist the ledger. The content is public by construction (every
+/// LedgerEvent field is public and the IBAN-derived fields were masked /
+/// declassified upstream); if any @secret value reached it, this
+/// Fs.write would be an information-flow violation. `fs` is expected to
+/// be attenuated to the output directory by the caller (fs.restrict_to).
+pub fun write_ledger(fs: Fs, path: String, events: List<LedgerEvent>) -> Result<Unit, IoError>
+    let lines = build_chain(events)
+    return fs.write(path, render_chain(lines))
