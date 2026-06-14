@@ -1,0 +1,90 @@
+// capa_claimdesk.domain
+//
+// The pure data vocabulary of the expense-reimbursement domain: who is
+// claiming, what they are claiming for, and the line items that make up
+// a claim. Zero capabilities; imported by the claim lifecycle and (in
+// later phases) by the rules engine, the ledger, and the adapters.
+//
+// Information-flow intent: `Employee.iban` holds bank account data and
+// is marked `@secret` here, at the point of definition. That single
+// annotation is the seed for the IFC phase: the compiler propagates a
+// secret label through every value derived from the IBAN, and the
+// ledger/payout code in a later phase will have to route it through an
+// audited declassify before it can reach a public sink (a log line, a
+// CSV export, a network call). Marking it now, in Phase 1, means the
+// IFC phase tightens the existing surface rather than retrofitting
+// annotations onto code that already leaks.
+
+import capa_claimdesk.money
+
+// =========================================================
+// People
+// =========================================================
+//
+// `iban` is the regulated secret: an employee's bank account, used
+// only to pay out an approved claim. Everything else on the record is
+// ordinary directory data.
+
+pub type Employee {
+    id: String,
+    name: String,
+    department: String,
+    iban: @secret String
+}
+
+pub fun employee(id: String, name: String, department: String, iban: String) -> Employee
+    return Employee { id: id, name: name, department: department, iban: iban }
+
+// =========================================================
+// Expense categories
+// =========================================================
+//
+// A closed set of reimbursable categories. The rules engine in a later
+// phase attaches per-category limits and receipt requirements; in
+// Phase 1 the category is plain classification data carried on each
+// line item.
+
+pub type Category =
+    Travel
+    Meals
+    Lodging
+    Equipment
+    Other
+
+pub fun category_name(c: Category) -> String
+    return match c
+        Travel    -> "Travel"
+        Meals     -> "Meals"
+        Lodging   -> "Lodging"
+        Equipment -> "Equipment"
+        Other     -> "Other"
+
+// =========================================================
+// Expense lines
+// =========================================================
+//
+// One reimbursable item: a free-text description, its category, and the
+// amount as `Money` (integer cents, see money.capa). A claim is a list
+// of these.
+
+pub type ExpenseLine {
+    description: String,
+    category: Category,
+    amount: Money
+}
+
+pub fun expense_line(description: String, category: Category, amount: Money) -> ExpenseLine
+    return ExpenseLine {
+        description: description,
+        category: category,
+        amount: amount
+    }
+
+/// Total of a list of expense lines, all required to share `currency`.
+/// Reuses money.sum, so a line in the wrong currency is a typed error,
+/// not a silently wrong total.
+pub fun lines_total(lines: List<ExpenseLine>, currency: Currency) -> Result<Money, MoneyError>
+    let amounts: List<Money> = []
+    for line in lines
+        amounts.push(line.amount)
+    return sum(amounts, currency)

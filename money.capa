@@ -1,0 +1,172 @@
+// capa_claimdesk.money
+//
+// Money as an integer count of minor units (cents), never a Float.
+// Capa has no implicit numeric coercion (Float + Int is a type error)
+// and binary floating point cannot represent most decimal amounts
+// exactly, so currency is the textbook case for fixed-point integers:
+// 12.34 EUR is the pair (1234, EUR). Every amount in claimdesk is a
+// whole number of cents; rounding, if it ever happens, happens once
+// and visibly, not silently on every addition.
+//
+// Zero capabilities: pure data and pure total functions over Int and
+// a small sum type. Identical under `--run` and `--wasm --run`.
+
+// =========================================================
+// Currency
+// =========================================================
+//
+// A closed set of supported currencies. All claimdesk currencies are
+// two-decimal (minor unit = 1/100 major unit), which keeps `cents`
+// uniform; a zero-decimal currency (JPY) or three-decimal (BHD) would
+// need a per-currency scale and is deliberately out of scope for v0.1.
+
+pub type Currency =
+    EUR
+    USD
+    GBP
+
+/// The ISO 4217 code, for display and serialization.
+pub fun currency_code(c: Currency) -> String
+    return match c
+        EUR -> "EUR"
+        USD -> "USD"
+        GBP -> "GBP"
+
+// =========================================================
+// Money
+// =========================================================
+//
+// `cents` may be negative (a correction or a debit). The currency is
+// carried with the amount so a cross-currency mistake is caught at the
+// point of the operation rather than producing a meaningless number.
+
+pub type Money {
+    cents: Int,
+    currency: Currency
+}
+
+/// Construct an amount from a whole number of minor units.
+pub fun money(cents: Int, currency: Currency) -> Money
+    return Money { cents: cents, currency: currency }
+
+/// Construct from major and minor units, e.g. `from_major(12, 34, EUR)`
+/// is 12.34 EUR. `minor` is taken modulo 100 only in the sense that the
+/// caller is expected to pass 0..99; this helper is a convenience for
+/// fixtures and does no validation, matching how a literal amount is
+/// written by hand.
+pub fun from_major(major: Int, minor: Int, currency: Currency) -> Money
+    return Money { cents: major * 100 + minor, currency: currency }
+
+/// Zero in a given currency, the additive identity for `add`.
+pub fun zero(currency: Currency) -> Money
+    return Money { cents: 0, currency: currency }
+
+// =========================================================
+// Errors
+// =========================================================
+
+/// The one thing that can go wrong combining amounts: a currency
+/// mismatch. Modelled as a typed error so callers handle it through
+/// `Result` rather than discovering a silently wrong total later.
+pub type MoneyError =
+    CurrencyMismatch(Currency, Currency)
+
+pub fun money_error_message(e: MoneyError) -> String
+    return match e
+        CurrencyMismatch(a, b) ->
+            "currency mismatch: ${currency_code(a)} vs ${currency_code(b)}"
+
+// =========================================================
+// Operations
+// =========================================================
+
+/// Add two amounts of the *same* currency. Mixing currencies is a
+/// typed error, never an implicit conversion: claimdesk has no FX
+/// table and inventing one would hide a real data problem.
+pub fun add(a: Money, b: Money) -> Result<Money, MoneyError>
+    return match same_currency(a, b)
+        Err(e) -> Err(e)
+        Ok(_)  -> Ok(Money { cents: a.cents + b.cents, currency: a.currency })
+
+/// Subtract `b` from `a` (same currency). The result may be negative.
+pub fun subtract(a: Money, b: Money) -> Result<Money, MoneyError>
+    return match same_currency(a, b)
+        Err(e) -> Err(e)
+        Ok(_)  -> Ok(Money { cents: a.cents - b.cents, currency: a.currency })
+
+/// Sum a list of amounts, all required to share `currency`. An empty
+/// list sums to `zero(currency)`. Folding through `Result` means a
+/// single mismatched entry aborts the whole total with a clear error.
+pub fun sum(amounts: List<Money>, currency: Currency) -> Result<Money, MoneyError>
+    var acc = zero(currency)
+    for m in amounts
+        match add(acc, m)
+            Err(e)  -> return Err(e)
+            Ok(next) -> acc = next
+    return Ok(acc)
+
+/// True when two amounts are equal in both magnitude and currency.
+pub fun equals(a: Money, b: Money) -> Bool
+    return a.cents == b.cents and same_currency_bool(a, b)
+
+/// Ordering helper restricted to a single currency: -1 if a < b, 0 if
+/// equal, 1 if a > b. Comparing across currencies is meaningless, so it
+/// is a typed error rather than a number.
+pub fun compare(a: Money, b: Money) -> Result<Int, MoneyError>
+    match same_currency(a, b)
+        Err(e) -> return Err(e)
+        Ok(_)  -> ()
+    if a.cents < b.cents
+        return Ok(-1)
+    if a.cents > b.cents
+        return Ok(1)
+    return Ok(0)
+
+// =========================================================
+// Formatting
+// =========================================================
+
+/// Render as a human-readable amount with two decimals and the ISO
+/// code, e.g. `1234.56 EUR` or `-7.05 USD`. Pure integer arithmetic
+/// keeps it byte-identical on both backends; no Float ever appears.
+pub fun format(m: Money) -> String
+    let negative = m.cents < 0
+    let magnitude = if negative then 0 - m.cents else m.cents
+    let major = magnitude / 100
+    let minor = magnitude - major * 100
+    let minor_str = if minor < 10 then "0${minor}" else "${minor}"
+    let sign = if negative then "-" else ""
+    return "${sign}${major}.${minor_str} ${currency_code(m.currency)}"
+
+// =========================================================
+// Internal helpers
+// =========================================================
+
+fun same_currency(a: Money, b: Money) -> Result<Unit, MoneyError>
+    if same_currency_bool(a, b)
+        return Ok(())
+    return Err(CurrencyMismatch(a.currency, b.currency))
+
+fun same_currency_bool(a: Money, b: Money) -> Bool
+    return match a.currency
+        EUR -> is_eur(b.currency)
+        USD -> is_usd(b.currency)
+        GBP -> is_gbp(b.currency)
+
+fun is_eur(c: Currency) -> Bool
+    return match c
+        EUR -> true
+        USD -> false
+        GBP -> false
+
+fun is_usd(c: Currency) -> Bool
+    return match c
+        EUR -> false
+        USD -> true
+        GBP -> false
+
+fun is_gbp(c: Currency) -> Bool
+    return match c
+        EUR -> false
+        USD -> false
+        GBP -> true
