@@ -1,0 +1,163 @@
+// governance/audit.capa
+//
+// SELF-GOVERNANCE: capa_claimdesk auditing its own SBOM.
+//
+// This standalone program reads the CycloneDX SBOM that the compiler
+// emits for capa_claimdesk (governance/sbom.cyclonedx.json, produced by
+// governance/generate.sh) and checks a governance policy against it
+// with the capa_sbom library. It closes the loop: the same compiler
+// that PROVES the program's capability discipline also EMITS a
+// machine-readable description of it, and here a second Capa program
+// reads that description back in and VERIFIES the policy holds. Nothing
+// is asserted in prose; the PASS/FAIL below is computed from the SBOM.
+//
+// Two policies are enforced:
+//
+//   POLICY 1 (pure core): every function defined in the pure policy /
+//   domain core (rules, engine, mask, report, money, claim, domain)
+//   must declare ZERO capabilities. These modules decide eligibility,
+//   mask the IBAN, format reports, and move money as integer cents;
+//   none of them is allowed to touch the outside world. If the SBOM
+//   shows any core function with a declared capability, the engine has
+//   grown an authority it must not have, and this fails.
+//
+//   POLICY 2 (Net is fenced): only functions in the authorized FX /
+//   wiring modules (fx, main) may reach the Net capability. The FX rate
+//   fetch is the program's single egress; if any other function's SBOM
+//   entry reaches Net, an exfiltration path has opened and this fails.
+//
+// This program is DELIBERATELY STANDALONE. It imports only capa_sbom
+// (plus the Fs and Stdio capabilities it needs to read the file and
+// print the report); it does NOT import any capa_claimdesk module. Capa
+// resolves user types and functions in a single global namespace, so a
+// program that pulled in both capa_sbom and the full claimdesk module
+// graph could hit a name clash (two modules defining the same symbol).
+// Keeping the auditor standalone sidesteps that entirely: it never sees
+// the claimdesk source, only the JSON the compiler emitted from it.
+//
+// Run it (from the repository root, parent on the search path):
+//
+//     CAPA_PATH=.. capa --run       governance/audit.capa
+//     CAPA_PATH=.. capa --wasm --run governance/audit.capa   // identical
+//
+// Generate the SBOM it reads first with governance/generate.sh.
+
+import capa_sbom.model
+import capa_sbom.cyclonedx
+import capa_sbom.query
+
+// The source file a function is defined in, read from its capa:pos
+// property ("money.capa:29:5" -> "money.capa"). Empty when the SBOM
+// did not record a position (it always does for Capa-emitted SBOMs).
+fun source_file(c: Component) -> String
+    let pos = match first_property(c, "capa:pos")
+        Some(p) -> p
+        None    -> return ""
+    // pos is "<file>:<line>:<col>"; take the part before the first ':'.
+    // On Windows a vendored dependency's pos can be an absolute path
+    // ("C:\...\sha256.capa:28:1"), whose first ':' split yields the
+    // drive letter ("C"); those are not core modules, so the naive
+    // split is harmless for the local-module names we test against.
+    return match pos.split(":").first()
+        Some(f) -> f
+        None    -> ""
+
+// Is this function defined in the pure policy / domain core?
+fun is_core(c: Component) -> Bool
+    let f = source_file(c)
+    return f == "rules.capa" or f == "engine.capa" or f == "mask.capa" or f == "report.capa" or f == "money.capa" or f == "claim.capa" or f == "domain.capa"
+
+// May this function legitimately reach Net? Only the FX egress and the
+// top-level wiring in main.
+fun net_authorized(c: Component) -> Bool
+    let f = source_file(c)
+    return f == "fx.capa" or f == "main.capa"
+
+fun has_net(c: Component) -> Bool
+    for cap in reachable_capabilities(c)
+        if cap == "Net"
+            return true
+    for cap in declared_capabilities(c)
+        if cap == "Net"
+            return true
+    return false
+
+fun join(xs: List<String>) -> String
+    if xs.is_empty()
+        return "none"
+    var out = ""
+    var first = true
+    for x in xs
+        if first
+            out = x
+            first = false
+        else
+            out = "${out}, ${x}"
+    return out
+
+// POLICY 1: no core function declares any capability. Returns the list
+// of offenders (empty == PASS).
+fun core_violations(doc: Document) -> List<Component>
+    var bad: List<Component> = []
+    for c in functions(doc)
+        if is_core(c) and not declared_capabilities(c).is_empty()
+            bad.push(c)
+    return bad
+
+// POLICY 2: no unauthorized function reaches Net. Returns offenders.
+fun net_violations(doc: Document) -> List<Component>
+    var bad: List<Component> = []
+    for c in functions(doc)
+        if has_net(c) and not net_authorized(c)
+            bad.push(c)
+    return bad
+
+fun audit_document(stdio: Stdio, doc: Document) -> Bool
+    let s = summarize(doc)
+    stdio.println("auditing SBOM: ${format_name(doc.format)} ${doc.spec_version} '${doc.subject}'")
+    stdio.println("  ${s.component_count} components, ${s.function_count} functions, ${s.functions_with_capabilities} with capabilities")
+    stdio.println("")
+
+    var ok = true
+
+    // ---- Policy 1: the pure core declares no capabilities ----
+    let core_bad = core_violations(doc)
+    if core_bad.is_empty()
+        stdio.println("PASS  policy 1: the pure core (rules/engine/mask/report/money/claim/domain) declares no capabilities")
+    else
+        ok = false
+        stdio.println("FAIL  policy 1: a core function declares a capability it must not hold:")
+        for c in core_bad
+            stdio.println("        ${c.name} (${source_file(c)}) declares { ${join(declared_capabilities(c))} }")
+
+    // ---- Policy 2: only fx/main reach Net ----
+    let net_bad = net_violations(doc)
+    if net_bad.is_empty()
+        stdio.println("PASS  policy 2: only the FX egress (fx, main) reaches the Net capability")
+    else
+        ok = false
+        stdio.println("FAIL  policy 2: an unauthorized function reaches Net:")
+        for c in net_bad
+            stdio.println("        ${c.name} (${source_file(c)}) reaches Net")
+
+    stdio.println("")
+    if ok
+        stdio.println("AUDIT PASSED: every governance policy holds against the emitted SBOM.")
+    else
+        stdio.println("AUDIT FAILED: the SBOM violates the governance policy.")
+    return ok
+
+fun main(stdio: Stdio, fs: Fs)
+    // Attenuate the Fs to the governance directory before reading: the
+    // auditor only ever needs to open the pack it audits.
+    let scoped = fs.restrict_to("governance/")
+    match scoped.read("governance/sbom.cyclonedx.json")
+        Err(e) ->
+            stdio.eprintln("cannot read governance/sbom.cyclonedx.json: ${e}")
+            stdio.eprintln("run governance/generate.sh first to emit the SBOM.")
+        Ok(text) ->
+            match parse_cyclonedx(text)
+                Err(InvalidJson(_)) -> stdio.eprintln("SBOM is not valid JSON")
+                Err(e)              -> stdio.eprintln("not a usable SBOM: ${error_message(e)}")
+                Ok(doc) ->
+                    let _ = audit_document(stdio, doc)
