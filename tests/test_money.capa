@@ -1,0 +1,89 @@
+// Positive tests for capa_claimdesk.money (Phase 1 core).
+//
+// Money is integer cents plus a currency. These tests pin the pure
+// arithmetic, the typed currency-mismatch error, the formatting of
+// positive / negative / zero / sub-euro amounts, and the list sum
+// (including the empty-list identity and a mismatched-entry abort).
+// All pure: byte-identical under `capa test --both`.
+
+import capa_test.testing
+import capa_claimdesk.money
+
+fun main(stdio: Stdio)
+    let t = tester()
+
+    // ----- construction -----
+    let a = money(1000, EUR)
+    t.eq_int(stdio, "money.cents", a.cents, 1000)
+    t.eq_str(stdio, "money.code", currency_code(a.currency), "EUR")
+
+    let b = from_major(12, 34, EUR)
+    t.eq_int(stdio, "from_major.cents", b.cents, 1234)
+
+    let z = zero(USD)
+    t.eq_int(stdio, "zero.cents", z.cents, 0)
+    t.eq_str(stdio, "zero.code", currency_code(z.currency), "USD")
+
+    // ----- add (same currency) -----
+    match add(money(1000, EUR), money(250, EUR))
+        Ok(r)  -> t.eq_int(stdio, "add.ok", r.cents, 1250)
+        Err(_) -> t.fail(stdio, "add.ok", "unexpected currency mismatch")
+
+    // ----- add (currency mismatch -> typed error) -----
+    match add(money(1000, EUR), money(250, USD))
+        Ok(_)  -> t.fail(stdio, "add.mismatch", "mismatch should be an error")
+        Err(e) -> t.eq_str(stdio, "add.mismatch.msg", money_error_message(e),
+                           "currency mismatch: EUR vs USD")
+
+    // ----- subtract (may go negative) -----
+    match subtract(money(250, EUR), money(1000, EUR))
+        Ok(r)  -> t.eq_int(stdio, "subtract.negative", r.cents, 0 - 750)
+        Err(_) -> t.fail(stdio, "subtract.negative", "unexpected mismatch")
+
+    // ----- sum: empty list is the zero identity -----
+    let empty: List<Money> = []
+    match sum(empty, GBP)
+        Ok(r)  -> t.eq_int(stdio, "sum.empty", r.cents, 0)
+        Err(_) -> t.fail(stdio, "sum.empty", "unexpected mismatch")
+
+    // ----- sum: three amounts -----
+    let three: List<Money> = [money(100, EUR), money(200, EUR), money(50, EUR)]
+    match sum(three, EUR)
+        Ok(r)  -> t.eq_int(stdio, "sum.three", r.cents, 350)
+        Err(_) -> t.fail(stdio, "sum.three", "unexpected mismatch")
+
+    // ----- sum: one bad entry aborts the whole total -----
+    let mixed: List<Money> = [money(100, EUR), money(200, USD)]
+    match sum(mixed, EUR)
+        Ok(_)  -> t.fail(stdio, "sum.mixed", "mismatched entry should abort")
+        Err(e) -> t.eq_str(stdio, "sum.mixed.msg", money_error_message(e),
+                           "currency mismatch: EUR vs USD")
+
+    // ----- equals -----
+    t.eq_bool(stdio, "equals.same", equals(money(500, EUR), money(500, EUR)), true)
+    t.eq_bool(stdio, "equals.diff.amount", equals(money(500, EUR), money(501, EUR)), false)
+    t.eq_bool(stdio, "equals.diff.currency", equals(money(500, EUR), money(500, USD)), false)
+
+    // ----- compare (same currency) -----
+    match compare(money(100, EUR), money(200, EUR))
+        Ok(c)  -> t.eq_int(stdio, "compare.lt", c, 0 - 1)
+        Err(_) -> t.fail(stdio, "compare.lt", "unexpected mismatch")
+    match compare(money(300, EUR), money(200, EUR))
+        Ok(c)  -> t.eq_int(stdio, "compare.gt", c, 1)
+        Err(_) -> t.fail(stdio, "compare.gt", "unexpected mismatch")
+    match compare(money(200, EUR), money(200, EUR))
+        Ok(c)  -> t.eq_int(stdio, "compare.eq", c, 0)
+        Err(_) -> t.fail(stdio, "compare.eq", "unexpected mismatch")
+    match compare(money(200, EUR), money(200, USD))
+        Ok(_)  -> t.fail(stdio, "compare.mismatch", "cross-currency compare should error")
+        Err(e) -> t.eq_str(stdio, "compare.mismatch.msg", money_error_message(e),
+                           "currency mismatch: EUR vs USD")
+
+    // ----- format: positive, sub-euro padding, negative, zero -----
+    t.eq_str(stdio, "format.positive", format(money(123456, EUR)), "1234.56 EUR")
+    t.eq_str(stdio, "format.pad.minor", format(money(705, USD)), "7.05 USD")
+    t.eq_str(stdio, "format.negative", format(money(0 - 705, USD)), "-7.05 USD")
+    t.eq_str(stdio, "format.zero", format(zero(GBP)), "0.00 GBP")
+    t.eq_str(stdio, "format.whole", format(money(500, EUR)), "5.00 EUR")
+
+    t.finish(stdio)

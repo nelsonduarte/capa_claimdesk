@@ -1,0 +1,124 @@
+// Positive tests for capa_claimdesk.rules (Phase 2 policy set).
+//
+// Each rule is a pure predicate over a claim's lines and total that
+// yields Pass / Warn / Fail. These tests drive every rule across all
+// three outcomes and pin the exact reason text the engine quotes, so
+// the policy behaviour is locked and byte-identical on both backends.
+
+import capa_test.testing
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.rules
+
+// Render an outcome to a stable tag for assertions: the kind plus the
+// reason, so a test can assert both at once.
+fun tag(o: RuleOutcome) -> String
+    return match o
+        Pass      -> "PASS"
+        Warn(why) -> "WARN:${why}"
+        Fail(why) -> "FAIL:${why}"
+
+fun line(desc: String, cat: Category, cents: Int, cur: Currency) -> ExpenseLine
+    return expense_line(desc, cat, money(cents, cur))
+
+fun main(stdio: Stdio)
+    let t = tester()
+
+    // =====================================================
+    // CurrencyConsistencyRule
+    // =====================================================
+    let cc = CurrencyConsistencyRule { expected: EUR }
+    t.eq_str(stdio, "currency.name", cc.name(), "currency-consistency")
+
+    let cc_ok: List<ExpenseLine> = [
+        line("hotel", Lodging, 5000, EUR),
+        line("taxi", Travel, 1000, EUR)
+    ]
+    t.eq_str(stdio, "currency.pass", tag(cc.evaluate(cc_ok, money(6000, EUR))), "PASS")
+
+    let cc_bad: List<ExpenseLine> = [
+        line("hotel", Lodging, 5000, EUR),
+        line("taxi", Travel, 1000, USD)
+    ]
+    t.eq_str(stdio, "currency.fail", tag(cc.evaluate(cc_bad, money(6000, EUR))),
+             "FAIL:line in USD, claim is EUR")
+
+    // =====================================================
+    // TotalLimitRule (limit 100.00 EUR, warn within 500 cents)
+    // =====================================================
+    let tl = TotalLimitRule { limit: money(10000, EUR), warn_margin: 500 }
+    t.eq_str(stdio, "total.name", tl.name(), "total-limit")
+
+    let some_lines: List<ExpenseLine> = [line("x", Other, 0, EUR)]
+    // well under the limit -> Pass
+    t.eq_str(stdio, "total.pass", tag(tl.evaluate(some_lines, money(5000, EUR))), "PASS")
+    // within the warn margin (9600 is 400 < 500 below 10000) -> Warn
+    t.eq_str(stdio, "total.warn", tag(tl.evaluate(some_lines, money(9600, EUR))),
+             "WARN:total 96.00 EUR is within 500 cents of the limit")
+    // over the limit -> Fail
+    t.eq_str(stdio, "total.fail", tag(tl.evaluate(some_lines, money(10001, EUR))),
+             "FAIL:total 100.01 EUR exceeds limit 100.00 EUR")
+
+    // =====================================================
+    // CategoryLimitRule (Meals capped at 50.00 EUR)
+    // =====================================================
+    let cl = CategoryLimitRule { category: Meals, limit: money(5000, EUR) }
+    t.eq_str(stdio, "category.name", cl.name(), "category-limit:Meals")
+
+    let cat_ok: List<ExpenseLine> = [
+        line("lunch", Meals, 2000, EUR),
+        line("dinner", Meals, 2500, EUR),
+        line("taxi", Travel, 9000, EUR)
+    ]
+    // Meals subtotal 4500 <= 5000, the big Travel line is irrelevant -> Pass
+    t.eq_str(stdio, "category.pass", tag(cl.evaluate(cat_ok, money(13500, EUR))), "PASS")
+
+    let cat_over: List<ExpenseLine> = [
+        line("lunch", Meals, 3000, EUR),
+        line("dinner", Meals, 3000, EUR)
+    ]
+    // Meals subtotal 6000 > 5000 -> Fail
+    t.eq_str(stdio, "category.fail", tag(cl.evaluate(cat_over, money(6000, EUR))),
+             "FAIL:Meals subtotal 60.00 EUR exceeds 50.00 EUR")
+
+    // =====================================================
+    // ReceiptRequiredRule (threshold 75.00 EUR; warns, never fails)
+    // =====================================================
+    let rr = ReceiptRequiredRule { threshold: money(7500, EUR) }
+    t.eq_str(stdio, "receipt.name", rr.name(), "receipt-required")
+
+    let rr_none: List<ExpenseLine> = [line("snack", Meals, 500, EUR)]
+    t.eq_str(stdio, "receipt.pass", tag(rr.evaluate(rr_none, money(500, EUR))), "PASS")
+
+    let rr_one: List<ExpenseLine> = [line("flight", Travel, 8000, EUR)]
+    t.eq_str(stdio, "receipt.warn.one", tag(rr.evaluate(rr_one, money(8000, EUR))),
+             "WARN:1 line at or above 75.00 EUR needs a receipt")
+
+    let rr_two: List<ExpenseLine> = [
+        line("flight", Travel, 8000, EUR),
+        line("hotel", Lodging, 9000, EUR)
+    ]
+    t.eq_str(stdio, "receipt.warn.many", tag(rr.evaluate(rr_two, money(17000, EUR))),
+             "WARN:2 lines at or above 75.00 EUR need receipts")
+
+    // =====================================================
+    // DuplicateLineRule (same category + same cents = a duplicate)
+    // =====================================================
+    let dl = DuplicateLineRule {}
+    t.eq_str(stdio, "duplicate.name", dl.name(), "duplicate-line")
+
+    let no_dup: List<ExpenseLine> = [
+        line("lunch", Meals, 2000, EUR),
+        line("dinner", Meals, 2500, EUR)
+    ]
+    t.eq_str(stdio, "duplicate.pass", tag(dl.evaluate(no_dup, money(4500, EUR))), "PASS")
+
+    let has_dup: List<ExpenseLine> = [
+        line("taxi to airport", Travel, 3000, EUR),
+        line("lunch", Meals, 1500, EUR),
+        line("taxi to airport", Travel, 3000, EUR)
+    ]
+    t.eq_str(stdio, "duplicate.fail", tag(dl.evaluate(has_dup, money(7500, EUR))),
+             "FAIL:duplicate line: \"taxi to airport\" appears twice")
+
+    t.finish(stdio)

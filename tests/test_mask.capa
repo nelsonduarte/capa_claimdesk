@@ -1,0 +1,66 @@
+// Positive tests for capa_claimdesk.mask (Phase 3 IBAN bridges).
+//
+// Two pure, deterministic transforms over a @secret IBAN:
+//   - mask_iban keeps only the last four characters (data minimisation).
+//   - iban_fingerprint is a keyed HMAC-SHA256 correlation value.
+// Both KEEP their result @secret on purpose, so a test must declassify
+// (with a stated reason) to observe the bytes. The fingerprint is
+// pinned against a known-good vector captured from this very function;
+// because capa_hash is cross-backend the two backends produce the same
+// hex, so this also guards the HMAC determinism under `--both`.
+//
+// The IBAN is read from an Employee.iban field, which is @secret at the
+// point of definition (domain.capa), so mask_iban / iban_fingerprint
+// receive a genuinely @secret argument here, not a public literal.
+
+import capa_test.testing
+import capa_claimdesk.domain
+import capa_claimdesk.mask
+
+const FP_KEY: String = "claimdesk-iban-fingerprint-key-v1"
+
+fun main(stdio: Stdio)
+    let t = tester()
+
+    let emp = employee("E-1", "Ada Lovelace", "Engineering", "DE89370400440532013000")
+
+    // ----- mask: last four kept, rest masked -----
+    let masked = declassify(
+        mask.mask_iban(emp.iban),
+        reason: "test: observe the minimised display form"
+    )
+    t.eq_str(stdio, "mask.suffix", masked, "************3000")
+
+    // ----- mask: short input collapses to "****" -----
+    let short_emp = employee("E-2", "Grace", "Ops", "DE12")
+    let short = declassify(
+        mask.mask_iban(short_emp.iban),
+        reason: "test: observe the minimised display form"
+    )
+    t.eq_str(stdio, "mask.short", short, "****")
+
+    // ----- fingerprint: deterministic, pinned to a known vector -----
+    let fp = declassify(
+        mask.iban_fingerprint(emp.iban, FP_KEY),
+        reason: "test: pin the keyed fingerprint against a known vector"
+    )
+    t.eq_str(stdio, "fingerprint.known",
+             fp,
+             "04cb059c832ca810a33a78f860f8d84c13cf6c4da55e3c4dde5d95dbb2087cfa")
+
+    // ----- fingerprint: same IBAN + same key -> same value (stable) -----
+    let fp2 = declassify(
+        mask.iban_fingerprint(emp.iban, FP_KEY),
+        reason: "test: confirm the fingerprint is a pure function"
+    )
+    t.eq_str(stdio, "fingerprint.stable", fp, fp2)
+
+    // ----- fingerprint: a different IBAN gives a different value -----
+    let other = employee("E-3", "Alan", "Research", "FR7630006000011234567890189")
+    let fp_other = declassify(
+        mask.iban_fingerprint(other.iban, FP_KEY),
+        reason: "test: confirm distinct IBANs do not collide"
+    )
+    t.ne_str(stdio, "fingerprint.distinct", fp_other, fp)
+
+    t.finish(stdio)

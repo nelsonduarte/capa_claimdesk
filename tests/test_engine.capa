@@ -1,0 +1,83 @@
+// Positive tests for capa_claimdesk.engine (Phase 2 aggregation).
+//
+// The engine dispatches a heterogeneous List<Rule> over a claim and
+// folds the outcomes into one Decision:
+//
+//     any Fail -> Rejected, else any Warn -> NeedsInfo, else Approved.
+//
+// These tests pin that aggregation: all-pass approves for the total,
+// a single fail rejects (even with other passes), a warn with no fail
+// needs info, and a fail outranks a warn. They also check the per-rule
+// report length and the joined-reason text. Pure, byte-identical.
+
+import capa_test.testing
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.rules
+import capa_claimdesk.engine
+
+fun line(desc: String, cat: Category, cents: Int, cur: Currency) -> ExpenseLine
+    return expense_line(desc, cat, money(cents, cur))
+
+fun main(stdio: Stdio)
+    let t = tester()
+
+    // A claim well within every limit, no duplicates, single currency.
+    let clean: List<ExpenseLine> = [
+        line("lunch", Meals, 2000, EUR),
+        line("taxi", Travel, 1000, EUR)
+    ]
+    let clean_total = money(3000, EUR)
+
+    // ----- all pass -> Approved(total) -----
+    // List<Rule> is built by push, the same widening the engine's own
+    // policy builder uses (a list literal would fix the element to the
+    // first concrete rule type rather than the trait).
+    var pass_rules: List<Rule> = []
+    pass_rules.push(CurrencyConsistencyRule { expected: EUR })
+    pass_rules.push(TotalLimitRule { limit: money(100000, EUR), warn_margin: 500 })
+    pass_rules.push(DuplicateLineRule {})
+    let ev_pass = evaluate_claim(pass_rules, clean, clean_total)
+    t.eq_str(stdio, "engine.approved", decision_line(ev_pass.decision),
+             "APPROVED for 30.00 EUR")
+    t.eq_int(stdio, "engine.report.len", ev_pass.report.length(), 3)
+
+    // ----- one fail (over the total limit) outranks the passes -> Rejected -----
+    var fail_rules: List<Rule> = []
+    fail_rules.push(CurrencyConsistencyRule { expected: EUR })
+    fail_rules.push(TotalLimitRule { limit: money(1000, EUR), warn_margin: 500 })
+    let ev_fail = evaluate_claim(fail_rules, clean, clean_total)
+    t.eq_str(stdio, "engine.rejected", decision_line(ev_fail.decision),
+             "REJECTED: total 30.00 EUR exceeds limit 10.00 EUR")
+
+    // ----- a warn, no fail -> NeedsInfo -----
+    // Total 30.00 within 500 cents of a 34.00 limit warns; nothing fails.
+    var warn_rules: List<Rule> = []
+    warn_rules.push(CurrencyConsistencyRule { expected: EUR })
+    warn_rules.push(TotalLimitRule { limit: money(3400, EUR), warn_margin: 500 })
+    let ev_warn = evaluate_claim(warn_rules, clean, clean_total)
+    t.eq_str(stdio, "engine.needsinfo", decision_line(ev_warn.decision),
+             "NEEDS INFO: total 30.00 EUR is within 500 cents of the limit")
+
+    // ----- a fail outranks a warn (both present) -> Rejected -----
+    // The currency rule fails (a USD line), the total rule warns.
+    let mixed_lines: List<ExpenseLine> = [
+        line("lunch", Meals, 2000, EUR),
+        line("foreign", Travel, 1000, USD)
+    ]
+    var fail_over_warn: List<Rule> = []
+    fail_over_warn.push(TotalLimitRule { limit: money(3400, EUR), warn_margin: 500 })
+    fail_over_warn.push(CurrencyConsistencyRule { expected: EUR })
+    let ev_fw = evaluate_claim(fail_over_warn, mixed_lines, clean_total)
+    t.eq_str(stdio, "engine.fail.outranks.warn", decision_line(ev_fw.decision),
+             "REJECTED: line in USD, claim is EUR")
+
+    // ----- two fails are joined with "; " in declaration order -----
+    var two_fails: List<Rule> = []
+    two_fails.push(TotalLimitRule { limit: money(1000, EUR), warn_margin: 500 })
+    two_fails.push(CategoryLimitRule { category: Meals, limit: money(500, EUR) })
+    let ev_two = evaluate_claim(two_fails, clean, clean_total)
+    t.eq_str(stdio, "engine.two.fails.joined", decision_line(ev_two.decision),
+             "REJECTED: total 30.00 EUR exceeds limit 10.00 EUR; Meals subtotal 20.00 EUR exceeds 5.00 EUR")
+
+    t.finish(stdio)

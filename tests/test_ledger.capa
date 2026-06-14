@@ -1,0 +1,87 @@
+// Positive tests for capa_claimdesk.ledger (Phase 3 audit chain).
+//
+// The ledger chains events by HMAC-SHA256: chain[i] covers
+// chain[i-1] || "|" || event_i, anchored to GENESIS. These tests pin
+//   - the canonical serialization of an event,
+//   - one known-good chain MAC vector (cross-backend, so this also
+//     guards the HMAC determinism under `--both`),
+//   - that verify_chain accepts an intact chain and REJECTS a chain
+//     with any tampered body or MAC (the tamper-evidence property),
+//   - that mac_matches (the constant-time comparator) agrees with the
+//     recomputed MAC and rejects a wrong one.
+//
+// All pure (capa_hash is zero-capability); byte-identical on both
+// backends.
+
+import capa_test.testing
+import capa_claimdesk.ledger
+
+fun ev(seq: Int, action: String, detail: String) -> LedgerEvent
+    return ledger_event(seq, "CLM-1", action, "system", "fp123", "************3000", 0, "", detail)
+
+// Rebuild a LedgerLine list with one body field replaced (tamper).
+fun tamper_body(lines: List<LedgerLine>, at: Int, new_body: String) -> List<LedgerLine>
+    var out: List<LedgerLine> = []
+    var i = 0
+    for l in lines
+        if i == at
+            out.push(LedgerLine { body: new_body, chain: l.chain })
+        else
+            out.push(l)
+        i = i + 1
+    return out
+
+fun main(stdio: Stdio)
+    let t = tester()
+
+    // ----- canonical serialization is the tamper surface -----
+    let e1 = ev(1, "SUBMITTED", "opened")
+    t.eq_str(stdio, "ledger.serialize",
+             serialize_event(e1),
+             "1|CLM-1|SUBMITTED|system|fp=fp123|payee=************3000|0||opened")
+
+    // ----- one known-good chain MAC vector (anchored at GENESIS) -----
+    // (regenerated from chain_mac("GENESIS", serialize_event(ev(1,...,"opened")))
+    let body1 = serialize_event(ev(1, "SUBMITTED", "opened"))
+    t.eq_str(stdio, "ledger.chain_mac.known",
+             chain_mac("GENESIS", body1),
+             "aa93a9cd5a4ae4f184e9aec28a87d56757565f4371d3cda323b10ab81b754aae")
+
+    // ----- build a real three-event chain -----
+    var events: List<LedgerEvent> = []
+    events.push(ev(1, "SUBMITTED", "opened"))
+    events.push(ev(2, "UNDER_REVIEW", "picked up"))
+    events.push(ev(3, "APPROVED", "approved by reviewer"))
+    let chain = build_chain(events)
+    t.eq_int(stdio, "ledger.chain.len", chain.length(), 3)
+
+    // ----- an intact chain verifies true -----
+    t.eq_bool(stdio, "ledger.verify.intact", verify_chain(chain), true)
+
+    // ----- tampering the FIRST body breaks the whole downstream chain -----
+    let tampered_first = tamper_body(chain, 0,
+        "1|CLM-1|SUBMITTED|system|fp=fp123|payee=************3000|0||EDITED")
+    t.eq_bool(stdio, "ledger.verify.tampered.first", verify_chain(tampered_first), false)
+
+    // ----- tampering a MIDDLE body is also caught -----
+    let tampered_mid = tamper_body(chain, 1,
+        "2|CLM-1|UNDER_REVIEW|attacker|fp=fp123|payee=************3000|0||picked up")
+    t.eq_bool(stdio, "ledger.verify.tampered.mid", verify_chain(tampered_mid), false)
+
+    // ----- a chain whose stored MAC was swapped fails too -----
+    var swapped: List<LedgerLine> = []
+    var i = 0
+    for l in chain
+        if i == 2
+            swapped.push(LedgerLine { body: l.body, chain: "deadbeef" })
+        else
+            swapped.push(l)
+        i = i + 1
+    t.eq_bool(stdio, "ledger.verify.swapped.mac", verify_chain(swapped), false)
+
+    // ----- mac_matches: agrees with the recomputed MAC, rejects a wrong one -----
+    let good = chain_mac("GENESIS", body1)
+    t.eq_bool(stdio, "ledger.mac_matches.equal", mac_matches(good, good), true)
+    t.eq_bool(stdio, "ledger.mac_matches.differ", mac_matches(good, "deadbeef"), false)
+
+    t.finish(stdio)

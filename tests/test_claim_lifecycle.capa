@@ -1,0 +1,76 @@
+// Positive tests for capa_claimdesk.claim (Phase 1 typestate lifecycle).
+//
+// The claim is a typestate: Draft -> Submitted -> UnderReview ->
+// Approved -> Settled, with a Rejected terminal off UnderReview. The
+// type checker enforces the protocol (the negative cases in negative/
+// prove the illegal transitions do not compile); here we drive the two
+// LEGAL paths end to end and assert the values each step records:
+//   - the submit tick, the reviewer, the decider,
+//   - the approved total (readable only on Claim[Approved]),
+//   - that settle consumes a fresh DisbursementAuthorization and yields
+//     a receipt with the authorized amount,
+//   - the rejection path records its decider and is closed by discard.
+//
+// Linear values (the claim, the authorization) are consumed exactly
+// once on every path. Pure, byte-identical on both backends.
+
+import capa_test.testing
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.authz
+import capa_claimdesk.claim
+
+fun sample_lines() -> List<ExpenseLine>
+    var lines: List<ExpenseLine> = []
+    lines.push(expense_line("hotel", Lodging, money(8000, EUR)))
+    lines.push(expense_line("taxi", Travel, money(2000, EUR)))
+    return lines
+
+fun main(stdio: Stdio)
+    let t = tester()
+
+    let emp = employee("E-1", "Ada Lovelace", "Engineering", "DE89370400440532013000")
+
+    // =====================================================
+    // Happy path: Draft -> Submitted -> UnderReview -> Approved -> Settled
+    // =====================================================
+    let draft = draft_claim("CLM-1", emp, sample_lines(), EUR)
+    let submitted = submit(draft, 1700000000)
+    t.eq_int(stdio, "lifecycle.submitted_at", submitted.submitted_at, 1700000000)
+
+    let under_review = start_review(submitted, "reviewer-bob")
+    t.eq_str(stdio, "lifecycle.reviewer", under_review.reviewer, "reviewer-bob")
+
+    let approved = approve(under_review, "manager-carol")
+    // approved_total is callable only on Claim[Approved].
+    match approved.approved_total()
+        Ok(total) -> t.eq_str(stdio, "lifecycle.approved_total", format(total), "100.00 EUR")
+        Err(_)    -> t.fail(stdio, "lifecycle.approved_total", "unexpected currency mismatch")
+    t.eq_str(stdio, "lifecycle.decided_by", approved.decided_by_name(), "manager-carol")
+
+    // Mint a fresh, one-shot authorization for the approved amount and
+    // settle the claim with it. settle consumes both linear values.
+    let authz = authorize("CLM-1", 10000, "EUR", 1)
+    let settlement = settle(approved, authz)
+    t.eq_str(stdio, "lifecycle.receipt.claim_id", settlement.receipt.claim_id, "CLM-1")
+    t.eq_int(stdio, "lifecycle.receipt.amount", settlement.receipt.amount_cents, 10000)
+    t.eq_str(stdio, "lifecycle.receipt.currency", settlement.receipt.currency_code, "EUR")
+    t.eq_int(stdio, "lifecycle.receipt.nonce", settlement.receipt.nonce, 1)
+
+    // payee is readable only on Claim[Settled]; then archive consumes it.
+    let payee = settlement.claim.payee()
+    t.eq_str(stdio, "lifecycle.payee", payee.name, "Ada Lovelace")
+    settlement.claim.archive()
+
+    // =====================================================
+    // Rejection path: Draft -> Submitted -> UnderReview -> Rejected
+    // =====================================================
+    let draft2 = draft_claim("CLM-2", emp, sample_lines(), EUR)
+    let submitted2 = submit(draft2, 1700000001)
+    let ur2 = start_review(submitted2, "reviewer-dan")
+    let rejected = reject(ur2, "manager-eve")
+    t.eq_str(stdio, "rejection.rejected_by", rejected.rejected_by(), "manager-eve")
+    // discard consumes the rejected claim so it cannot be abandoned.
+    rejected.discard()
+
+    t.finish(stdio)
