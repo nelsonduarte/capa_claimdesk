@@ -39,14 +39,13 @@ import capa_claimdesk.rules
 
 // The configuration keys this loader is allowed to read. The attenuated
 // Env is scoped to exactly this set; `allows` is false for everything
-// else. Centralised here so the attenuation and the reads cannot drift.
-fun config_keys() -> List<String>
-    return [
-        "CLAIMDESK_TOTAL_LIMIT",
-        "CLAIMDESK_MEALS_LIMIT",
-        "CLAIMDESK_RECEIPT_THRESHOLD",
-        "CLAIMDESK_TOTAL_WARN_MARGIN"
-    ]
+// else. The four key names are the single source of truth for both the
+// attenuation set below and the reads; they are written as an inline
+// list literal at the `restrict_to_keys` call rather than returned from a
+// helper, because the Wasm backend currently mis-lowers a capability
+// attenuation whose argument is a function-call result (it emits an
+// `$_alloc_tmp` local it forgets to declare); a literal at the call site
+// sidesteps that. Reported upstream with a minimal repro.
 
 // The resolved policy thresholds, all in integer cents. A plain data
 // record: the output of reading config, the input to building rules.
@@ -82,7 +81,12 @@ fun read_cents(env: Env, key: String, default: Int) -> Int
 // Defaults reproduce the Phase 3 policy, so the demo is deterministic
 // with no CLAIMDESK_* variables set.
 pub fun load_policy_config(env: Env) -> PolicyConfig
-    let scoped = env.restrict_to_keys(config_keys())
+    let scoped = env.restrict_to_keys([
+        "CLAIMDESK_TOTAL_LIMIT",
+        "CLAIMDESK_MEALS_LIMIT",
+        "CLAIMDESK_RECEIPT_THRESHOLD",
+        "CLAIMDESK_TOTAL_WARN_MARGIN"
+    ])
     return PolicyConfig {
         total_limit_cents: read_cents(scoped, "CLAIMDESK_TOTAL_LIMIT", 100000),
         meals_limit_cents: read_cents(scoped, "CLAIMDESK_MEALS_LIMIT", 7500),

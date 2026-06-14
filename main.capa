@@ -1,38 +1,38 @@
 // capa_claimdesk.main
 //
-// Phase 3 demonstration: the policy rule engine driving the claim
-// lifecycle, now recorded in a tamper-evident audit ledger and bounded
-// by information-flow control over the one regulated secret, the
-// employee IBAN.
+// Phase 4 demonstration: the IO adapter layer that wires the pure core
+// (rules + engine) to the world. Each adapter holds ONE attenuated
+// capability and the pure core stays capability-free:
 //
-// Each claim walks Draft -> Submitted -> UnderReview, the engine
-// evaluates the expense policy, and its `Decision` chooses the next
-// transition:
+//   config.capa  (Env)  loads the policy thresholds from the
+//                       environment, restrict_to_keys to the CLAIMDESK_*
+//                       config keys, and builds the rule list.
+//   intake.capa  (Fs)   imports a batch of claims from a CSV file
+//                       (capa_csv), read through an Fs narrowed to data/.
+//   store.capa   (Db)   persists each claim, its decision, and its
+//                       ledger lines to a SQLite file under out/, then
+//                       queries a per-verdict rollup (parse_json).
+//   report.capa  (Fs/Stdio) renders a summary through a chosen Reporter
+//                       (Text/Csv/Json, dynamic dispatch) and writes it.
 //
-//     Approved  -> approve -> (mint authorization) -> settle (pay)
-//     Rejected  -> reject
-//     NeedsInfo -> reject  (held for a human; modelled as a rejection
-//                  with the reasons, since there is no hold state yet)
+// THE FLOW. load config (Env) -> import claims from CSV (intake) ->
+// process each through the engine (Phase 2) and the ledger (Phase 3) ->
+// persist to the Db (store) -> emit the report (report). The two example
+// claims (one approved, one rejected) now come from data/claims.csv.
 //
-// Every relevant lifecycle event is appended to an append-only ledger
-// whose entries are chained by HMAC-SHA256 (ledger.capa). At the end of
-// the run the chain is re-verified in CONSTANT TIME and the ledger is
-// persisted through an Fs capability attenuated to the output directory.
+// INFORMATION FLOW, unchanged and still enforced. The employee IBAN is
+// @secret (domain.capa). It now ALSO enters from the CSV (a public CSV
+// string flowing into the @secret field, always allowed), and it still
+// reaches no sink in the clear: it is masked or fingerprinted through the
+// two audited declassifies in run_claim, exactly as in Phase 3. The new
+// adapters persist and report only those already-public minimised forms,
+// so the program's declassification_sites count does not grow.
 //
-// INFORMATION FLOW. The employee IBAN is @secret (domain.capa). It never
-// reaches the ledger or the console in the clear: it is either masked to
-// its last four characters (mask.mask_iban, which declassifies a lossy
-// display form) or reduced to a keyed one-way fingerprint
-// (mask.iban_fingerprint, which STAYS @secret). The fingerprint is
-// disclosed only at the ledger sink, via a single audited `declassify`
-// per claim with a stated GDPR reason. `run_claim` is marked
-// @strict_ifc, so those declassifies are load-bearing: remove one and
-// `capa --check` hard-fails because a @secret value reaches Fs.write.
-//
-// DETERMINISM. Fixed amounts, a fixed submission tick, fixed sequence
-// numbers, no clock and no randomness, so the ledger MACs are
-// byte-identical under `--run` and `--wasm --run` (capa_hash is
-// cross-backend).
+// DETERMINISM. Fixed CSV input, fixed config defaults (no CLAIMDESK_*
+// var need be set), a fixed submission tick, fixed sequence numbers, the
+// Db file reset at the start of each run, and capa_hash's cross-backend
+// HMAC: the whole run, ledger MACs, the SQLite rollup, and the rendered
+// report are byte-identical under `--run` and `--wasm --run`.
 //
 // Run from a directory whose CAPA_PATH reaches the repo's parent, e.g.:
 //
@@ -47,6 +47,10 @@ import capa_claimdesk.rules
 import capa_claimdesk.engine
 import capa_claimdesk.mask
 import capa_claimdesk.ledger
+import capa_claimdesk.config
+import capa_claimdesk.intake
+import capa_claimdesk.store
+import capa_claimdesk.report
 
 // The managed key for the IBAN correlation fingerprint. In a real
 // deployment this is a KMS-held secret; fixed here for a reproducible
@@ -58,22 +62,16 @@ fun fingerprint_key() -> String
 fun ledger_path() -> String
     return "ledger.log"
 
+// Where the SQLite store lives, under the attenuated Db's out/ prefix.
+fun store_path() -> String
+    return "out/claimdesk.db"
+
+// Where the rendered report is written, under the attenuated Fs out/.
+fun report_path() -> String
+    return "out/report.csv"
+
 fun show_money(m: Money) -> String
     return format(m)
-
-// The standard claimdesk expense policy, built once and applied to
-// every claim. The currency-consistency rule runs first so a stray
-// currency is reported explicitly rather than corrupting a total. The
-// configurable rules carry their thresholds here, so policy is data:
-// a different deployment builds a different list, never edits a rule.
-fun standard_policy() -> List<Rule>
-    var rules: List<Rule> = []
-    rules.push(CurrencyConsistencyRule { expected: EUR })
-    rules.push(TotalLimitRule { limit: from_major(1000, 0, EUR), warn_margin: 5000 })
-    rules.push(CategoryLimitRule { category: Meals, limit: from_major(75, 0, EUR) })
-    rules.push(ReceiptRequiredRule { threshold: from_major(400, 0, EUR) })
-    rules.push(DuplicateLineRule {})
-    return rules
 
 // Compute the claim total in EUR for the engine. A currency mismatch
 // here yields a zero total; the currency-consistency rule is what
@@ -89,18 +87,29 @@ fun print_evaluation(eval: Evaluation, stdio: Stdio)
         stdio.println("              - ${entry.label}: ${outcome_line(entry.outcome)}")
     stdio.println("              => ${decision_line(eval.decision)}")
 
-// Drive one claim from UnderReview to a terminal state under the
-// engine's decision, appending each lifecycle event to `events`.
-// Consumes the linear claim exactly once on every path: Approved mints
-// and spends a one-shot authorization and pays out; Rejected and
-// NeedsInfo both reject. `seq0` is the sequence number of the first
-// event this function appends; `nonce` ties an approved payout to a
-// single ledger event.
-//
-// `fp` is the declassified IBAN fingerprint and `masked` the masked
-// IBAN suffix, both passed in already-public from the @strict_ifc
-// boundary in `run_claim`, so this engine-driver never touches the
-// @secret IBAN itself.
+// The public per-claim outcome carried out of the @strict_ifc boundary:
+// the events for the ledger, and the already-public record/line the
+// store and report consume. The fingerprint and masked suffix it holds
+// are the declassified forms, so this record never carries the @secret
+// IBAN.
+type ClaimResult {
+    events: List<LedgerEvent>,
+    record: ClaimRecord,
+    line: ClaimLine
+}
+
+// Drive one claim from UnderReview to a terminal state under the engine's
+// decision, appending each lifecycle event to `events`. Consumes the
+// linear claim exactly once on every path. Returns the appended events
+// and the public verdict triple (verdict label, settled amount, reason)
+// so the caller can build the store record without re-deriving it.
+type ProcessOutcome {
+    events: List<LedgerEvent>,
+    verdict: String,
+    amount_cents: Int,
+    reason: String
+}
+
 fun process(
     consume c: Claim[UnderReview],
     policy: List<Rule>,
@@ -109,12 +118,15 @@ fun process(
     masked: String,
     seq0: Int,
     stdio: Stdio
-) -> List<LedgerEvent>
+) -> ProcessOutcome
     let claim_id = c.id
     let total = claim_total(c.lines)
     let eval = evaluate_claim(policy, c.lines, total)
     print_evaluation(eval, stdio)
     var events: List<LedgerEvent> = []
+    var verdict = "REJECTED"
+    var settled_cents = 0
+    var reason = ""
     match eval.decision
         Approved(amount) ->
             let approved = approve(c, "M-4002 (Carla Dias)")
@@ -127,47 +139,37 @@ fun process(
             stdio.println("              receipt: claim ${receipt.claim_id}, nonce ${receipt.nonce}")
             events.push(ledger_event(seq0, claim_id, "APPROVED", "M-4002 (Carla Dias)", fp, masked, amount.cents, currency_code(amount.currency), "policy satisfied"))
             events.push(ledger_event(seq0 + 1, claim_id, "PAID", "system", fp, masked, receipt.amount_cents, receipt.currency_code, "payout settled, nonce ${receipt.nonce}"))
+            verdict = "APPROVED"
+            settled_cents = receipt.amount_cents
+            reason = "policy satisfied"
             settled.archive()
         Rejected(why) ->
             let rejected = reject(c, "M-4002 (Carla Dias)")
             stdio.println("[Rejected]    by ${rejected.rejected_by()}: ${why}")
             events.push(ledger_event(seq0, claim_id, "REJECTED", "M-4002 (Carla Dias)", fp, masked, 0, "", why))
+            reason = why
             rejected.discard()
         NeedsInfo(why) ->
             let held = reject(c, "M-4002 (Carla Dias)")
             stdio.println("[Rejected]    held for review by ${held.rejected_by()}: ${why}")
             events.push(ledger_event(seq0, claim_id, "REJECTED", "M-4002 (Carla Dias)", fp, masked, 0, "", "held for review: ${why}"))
+            reason = "held for review: ${why}"
             held.discard()
-    return events
+    return ProcessOutcome { events: events, verdict: verdict, amount_cents: settled_cents, reason: reason }
 
-// Walk a draft claim to UnderReview (the part of the protocol that is
-// the same for every claim), hand off to the engine-driven `process`,
-// then persist the cumulative ledger. `prior` is every event recorded
-// before this claim; the function appends this claim's events and
-// writes the WHOLE ledger to `out` (an Fs already attenuated to the
-// output directory), so the final claim's write holds the complete
-// chain. Returns the cumulative events so the caller threads them into
-// the next claim and the closing verification.
+// Walk a draft claim to UnderReview, hand off to the engine-driven
+// `process`, then persist the cumulative ledger. `prior` is every event
+// recorded before this claim; this function appends this claim's events
+// and writes the WHOLE ledger to `out` (an Fs already attenuated to the
+// output directory). Returns a ClaimResult: the cumulative events plus
+// the public store record and report line for this claim.
 //
 // @strict_ifc makes every @secret-reaches-sink in this function a hard
-// error rather than a warning. This is the one boundary where the
-// @secret IBAN is turned into the two public forms the ledger records,
-// each via a single audited declassify with a stated GDPR reason, and
-// the Fs.write sink lives in THIS SAME function so both declassifies are
-// load-bearing here (a declassify only breaks the secret-to-sink chain
-// within its own function):
-//
-//   - `masked`, the last-four display form. Reaches the [Draft]
-//     Stdio.println below; remove its declassify and a @secret-derived
-//     value reaches that sink.
-//
-//   - `fp`, the keyed correlation fingerprint, which mask.iban_fingerprint
-//     keeps @secret. It is written into the events this function persists
-//     through ledger.write_ledger's Fs.write below; remove its declassify
-//     and a @secret value reaches that sink.
-//
-// Delete either declassify and `capa --check` hard-fails. That is the
-// information-flow property, mechanically enforced and SBOM-recorded.
+// error. This is the one boundary where the @secret IBAN is turned into
+// the two public forms the rest of the program records, each via a single
+// audited declassify with a GDPR reason. The store record and report line
+// built here carry only those declassified forms, so the adapters
+// downstream introduce no further declassify.
 @strict_ifc()
 fun run_claim(
     id: String,
@@ -179,16 +181,13 @@ fun run_claim(
     out: Fs,
     prior: List<LedgerEvent>,
     stdio: Stdio
-) -> List<LedgerEvent>
+) -> ClaimResult
     // Re-bind the @secret IBAN field into an explicitly @secret local
-    // before deriving anything from it. This is load-bearing for the
-    // information-flow guarantee: a struct-field read does not currently
-    // carry its field-level @secret label on its own (compiler limitation,
-    // documented in the Phase 3 notes and README), so the annotation here
-    // is what keeps the IBAN in the secret domain. With it, the
-    // declassifies below are required and the sinks are guarded; without
-    // it, the field would launder to public and the declassifies would be
-    // no-ops. The annotated local is the single, reviewable seam.
+    // before deriving anything from it. This is load-bearing: a struct-
+    // field read does not currently carry its field-level @secret label
+    // on its own (compiler limitation, documented in the Phase 3 notes
+    // and README), so this annotation keeps the IBAN in the secret
+    // domain and makes the declassifies below required.
     let iban: @secret String = employee.iban
 
     let masked = declassify(
@@ -200,8 +199,6 @@ fun run_claim(
         reason: "GDPR: a keyed one-way IBAN fingerprint correlates an employee across ledger entries; it is recorded in the audit ledger, never the IBAN itself"
     )
 
-    // Start from the cumulative ledger so far, then append this claim's
-    // events; the whole ledger is re-chained and re-written below.
     var events: List<LedgerEvent> = []
     for e in prior
         events.push(e)
@@ -222,79 +219,135 @@ fun run_claim(
     events.push(ledger_event(seq0 + 1, id, "UNDER_REVIEW", "R-3001 (Bruno Antunes)", fp, masked, 0, "", "picked up by reviewer"))
 
     stdio.println("              evaluating policy:")
-    let tail = process(c2, policy, nonce, fp, masked, seq0 + 2, stdio)
-    for e in tail
+    let outcome = process(c2, policy, nonce, fp, masked, seq0 + 2, stdio)
+    for e in outcome.events
         events.push(e)
 
     // Persist the cumulative tamper-evident ledger. This Fs.write is the
-    // sink that makes the `fp` declassify above load-bearing: the events
-    // carry the declassified fingerprint, and without the declassify the
-    // @secret value would reach this write. Re-writing the whole chain
-    // each claim keeps a single, byte-reproducible file.
+    // sink that makes the `fp` declassify above load-bearing.
     match ledger.write_ledger(out, "out/${ledger_path()}", events)
         Ok(_)  -> ()
         Err(_) -> stdio.eprintln("failed to write ledger")
-    return events
 
-fun main(stdio: Stdio, fs: Fs)
-    stdio.println("claimdesk Phase 3 demo: tamper-evident ledger + IBAN information-flow")
-    stdio.println("====================================================================")
+    let record = ClaimRecord {
+        claim_id: id,
+        employee_fp: fp,
+        payee_masked: masked,
+        verdict: outcome.verdict,
+        amount_cents: outcome.amount_cents,
+        currency: "EUR",
+        reason: outcome.reason
+    }
+    let line = ClaimLine {
+        claim_id: id,
+        verdict: outcome.verdict,
+        amount_cents: outcome.amount_cents,
+        currency: EUR,
+        payee_masked: masked
+    }
+    return ClaimResult { events: events, record: record, line: line }
 
-    let alice = employee("E-1001", "Alice Mendes", "Engineering", "PT50000201231234567890154")
-    let bruno = employee("E-1002", "Bruno Costa", "Sales", "PT50000201231234567890267")
-    let policy = standard_policy()
+fun main(stdio: Stdio, fs: Fs, db: Db, env: Env)
+    stdio.println("claimdesk Phase 4 demo: IO adapter layer (Env config, CSV intake, Db store, Reporter)")
+    stdio.println("==================================================================================")
 
-    // Attenuate the Fs handed to main down to the output directory before
-    // any write reaches run_claim: even if a later bug aimed a path
-    // elsewhere, this narrowed handle can only write under "out/". Least
-    // privilege at the capability level, on top of the information-flow
-    // guarantee on the content. mkdir is idempotent and honours the
-    // attenuation set (Fs.write does not create parent directories).
+    // ---- config (Env, attenuated to the CLAIMDESK_* keys) ----
+    let cfg = load_policy_config(env)
+    let scoped_env = env.restrict_to_keys([
+        "CLAIMDESK_TOTAL_LIMIT", "CLAIMDESK_MEALS_LIMIT",
+        "CLAIMDESK_RECEIPT_THRESHOLD", "CLAIMDESK_TOTAL_WARN_MARGIN"
+    ])
+    stdio.println("")
+    stdio.println("[config]      policy from Env: ${describe_config(cfg)}")
+    let foreign = if scoped_env.allows("HOME") then "yes" else "no"
+    stdio.println("              Env attenuated; allows HOME outside config keys: ${foreign}")
+    let policy = policy_from_config(cfg)
+
+    // Attenuate the Fs to the output directory before any write, and to
+    // the data directory for the one intake read. Each narrowed handle
+    // can only touch its own subtree.
     let out = fs.restrict_to("out/")
     match out.mkdir("out/")
         Ok(_)  -> ()
         Err(_) -> ()
+    let data_fs = fs.restrict_to("data/")
 
-    // The single growing ledger for the whole run. Sequence numbers are
-    // assigned by hand so the chain is byte-reproducible. Each run_claim
-    // appends to and re-persists the cumulative ledger, threading the
-    // events forward; the final write holds the complete chain.
+    // ---- intake (Fs, attenuated to data/): import the claim batch ----
+    let claims = match import_claims(data_fs, "data/claims.csv")
+        Ok(cs) -> cs
+        Err(e) ->
+            stdio.eprintln("intake failed: ${intake_error_message(e)}")
+            []
+    stdio.println("[intake]      imported ${claims.length()} claim(s) from data/claims.csv")
+
+    // ---- process each claim: engine + ledger, threading the chain ----
     let empty: List<LedgerEvent> = []
-
-    // ---- Claim 1: passes every rule -> approved and paid ----
-    stdio.println("")
-    let lines1 = [
-        expense_line("Lisbon -> Berlin flight", Travel, from_major(312, 40, EUR)),
-        expense_line("Two nights, conference hotel", Lodging, from_major(186, 0, EUR)),
-        expense_line("Client dinner", Meals, from_major(54, 75, EUR))
-    ]
-    let events1 = run_claim("C-2026-0007", alice, lines1, policy, 1, 0, out, empty, stdio)
-
-    // ---- Claim 2: Meals subtotal over the per-category limit, plus a
-    // duplicate line -> rejected with the reasons ----
-    stdio.println("")
-    let lines2 = [
-        expense_line("Team lunch", Meals, from_major(48, 0, EUR)),
-        expense_line("Team dinner", Meals, from_major(60, 0, EUR)),
-        expense_line("Taxi to venue", Travel, from_major(22, 50, EUR)),
-        expense_line("Taxi to venue", Travel, from_major(22, 50, EUR))
-    ]
-    let events = run_claim("C-2026-0008", bruno, lines2, policy, 2, 10, out, events1, stdio)
+    var events: List<LedgerEvent> = empty
+    var records: List<ClaimRecord> = []
+    var report_lines: List<ClaimLine> = []
+    var nonce = 1
+    var seq0 = 0
+    for ic in claims
+        stdio.println("")
+        let res = run_claim(ic.id, ic.employee, ic.lines, policy, nonce, seq0, out, events, stdio)
+        events = res.events
+        records.push(res.record)
+        report_lines.push(res.line)
+        nonce = nonce + 1
+        seq0 = seq0 + 10
 
     stdio.println("")
     stdio.println("ledger written to out/${ledger_path()} (${events.length()} entries)")
 
-    // ---- Verify chain integrity in constant time ----
-    // Re-derive the chain from the events and compare each link's MAC
-    // with strings_equal (constant-time). A clean chain reports verified;
-    // a single altered past event would break every downstream MAC and
-    // this would report TAMPERED. (See the README for the tmpdir
-    // demonstration of an actual tampered chain failing this check.)
+    // ---- verify chain integrity in constant time ----
     let lines = build_chain(events)
     if verify_chain(lines)
         stdio.println("ledger verified: ${lines.length()} entries, HMAC chain intact")
     else
         stdio.println("LEDGER TAMPERED: HMAC chain broken")
 
+    // ---- store (Db, attenuated to out/): persist + rollup query ----
+    let store_db = db.restrict_to("out/")
     stdio.println("")
-    stdio.println("demo complete: one claim approved and paid, one rejected; ledger chained and verified.")
+    let db_foreign = if store_db.allows("data/secrets.db") then "yes" else "no"
+    stdio.println("[store]       Db attenuated to out/; allows data/secrets.db: ${db_foreign}")
+    match init_schema(store_db, store_path())
+        Ok(_)  -> ()
+        Err(e) -> stdio.eprintln("schema init failed: ${e}")
+    for rec in records
+        match record_claim(store_db, store_path(), rec)
+            Ok(_)  -> ()
+            Err(e) -> stdio.eprintln("record_claim failed: ${e}")
+    var ls = 0
+    for line in lines
+        match record_ledger_line(store_db, store_path(), ls, "chain", render_line(line))
+            Ok(_)  -> ()
+            Err(_) -> ()
+        ls = ls + 1
+    let summary = match summarize(store_db, store_path())
+        Ok(s)  -> s
+        Err(e) ->
+            stdio.eprintln("summary query failed: ${e}")
+            []
+    stdio.println("              rollup from SQLite (parse_json of db.query):")
+    for s in summary
+        stdio.println("                ${summary_line(s)}")
+
+    // ---- report (Fs/Stdio): render through a chosen Reporter ----
+    let data = ReportData {
+        title: "claimdesk processing summary",
+        claims: report_lines,
+        summary: summary
+    }
+    stdio.println("")
+    let csv_reporter = pick_reporter("csv")
+    let csv_text = render_report(csv_reporter, data)
+    match out.write(report_path(), csv_text)
+        Ok(_)  -> stdio.println("[report]      CSV report written to ${report_path()}")
+        Err(e) -> stdio.eprintln("report write failed: ${e}")
+    let text_reporter = pick_reporter("text")
+    stdio.println("")
+    stdio.print(render_report(text_reporter, data))
+
+    stdio.println("")
+    stdio.println("demo complete: claims imported from CSV, processed, persisted to SQLite, reported.")

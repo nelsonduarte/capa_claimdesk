@@ -126,9 +126,12 @@ pub fun import_from_text(text: String) -> Result<List<ImportedClaim>, IntakeErro
         return Err(NoRows)
 
     var claims: List<ImportedClaim> = []
-    var i = 0
     let n = table.length()
-    for _ in 0..n
+    // Iterate the data-row indices directly. A bound name (not `_`) is
+    // used deliberately: the Wasm backend does not yet lower a wildcard
+    // for-pattern (`for _ in ...`), a cross-backend gap reported upstream;
+    // here the index is needed anyway.
+    for i in 0..n
         let claim_id = col(table, i, "claim_id")?
         let line = line_from_row(table, i)?
         // Append the line to its claim's group, or start a new group.
@@ -155,7 +158,6 @@ pub fun import_from_text(text: String) -> Result<List<ImportedClaim>, IntakeErro
                 var first: List<ExpenseLine> = []
                 first.push(line)
                 claims.push(ImportedClaim { id: claim_id, employee: emp, lines: first })
-        i = i + 1
     return Ok(claims)
 
 // Import a batch of claims from a CSV file read through `fs`. The only
