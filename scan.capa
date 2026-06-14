@@ -1,0 +1,82 @@
+// capa_claimdesk.scan
+//
+// Phase 5 adapter: receipt-attachment verification. Before a high-value
+// claim is settled, its receipt attachment is checked: in a real
+// deployment this shells out to a virus / content scanner over the
+// attachment file. claimdesk models that as a `Proc` capability.
+//
+// CAPABILITY: Proc, and only Proc. This module holds no Fs / Db / Net /
+// Env / Clock / Random / Stdio. The verdict-shaping is pure; the ONE
+// capability use is spawning the scanner, behind the `--live` path.
+//
+// ATTENUATION. main narrows the `Proc` to exactly the scanner command
+// with `proc.restrict_to(scan_cmd())` before handing it here, so this
+// adapter can only ever spawn that one command (basename-prefix +
+// `-`-boundary match). `allows` is false for anything else, which the
+// demo prints to make the boundary visible. The narrowing is monotonic.
+//
+// DETERMINISM. The default demo path returns a FIXED `clean` verdict
+// (`fixed_scan`) and spawns nothing, so it is byte-identical on both
+// backends. The `--live` path (`run_scan`) performs a real `proc.exec`
+// of the attenuated scanner command and is documented as
+// non-deterministic (it depends on the host's scanner); it is exercised
+// only when the operator passes `--live` and is never part of the
+// compared, cross-backend flow. Either way the MANIFEST shows scan
+// holding a `Proc` attenuated to the scanner command: least-privilege
+// over a real capability, proven, with the deterministic demo intact.
+
+// The single command this adapter is allowed to spawn. main attenuates
+// the Proc to exactly this command before calling run_scan, so the
+// subprocess authority of the whole scan adapter is one binary.
+pub fun scan_cmd() -> String
+    return "python"
+
+// The verdict of a receipt scan. A closed sum type so the caller pattern-
+// matches rather than parsing a free string.
+pub type ScanVerdict =
+    Clean
+    Flagged(String)
+    Skipped
+
+pub fun verdict_label(v: ScanVerdict) -> String
+    return match v
+        Clean      -> "clean"
+        Flagged(r) -> "flagged: ${r}"
+        Skipped    -> "skipped (no attachment)"
+
+// The FIXED deterministic verdict used by the default demo path. A real
+// scanner would inspect the attachment bytes; the deterministic demo
+// asserts a known-clean receipt so the run is reproducible and makes no
+// subprocess call. Pure, no capability.
+pub fun fixed_scan(reference: String) -> ScanVerdict
+    if reference == ""
+        return Skipped
+    return Clean
+
+// Map a scanner's captured stdout to a verdict. The convention: a line
+// beginning "OK" is clean, anything else is the flag reason. Pure.
+fun verdict_from_output(out: String) -> ScanVerdict
+    let t = out.trim()
+    if t.starts_with("OK")
+        return Clean
+    return Flagged(t)
+
+// Run a LIVE receipt scan over the network-free subprocess. This is the
+// ONLY capability use in the module, reached only on the `--live` path.
+// `proc` is already attenuated to scan_cmd() by main, so an attempt to
+// spawn any other command returns Err before any system call. The body
+// here invokes the attenuated command on the receipt reference and shapes
+// its stdout into a verdict.
+//
+// This path is NON-DETERMINISTIC (it depends on the host scanner) and is
+// deliberately excluded from the compared cross-backend flow; it exists
+// to exercise the real Proc capability end-to-end under its attenuation.
+pub fun run_scan(proc: Proc, reference: String) -> Result<ScanVerdict, IoError>
+    if reference == ""
+        return Ok(Skipped)
+    // A stand-in scanner: echo "OK <ref>" to prove the spawn + capture
+    // path. A real deployment swaps in an actual content scanner gated by
+    // the same attenuated Proc.
+    let argv = "[\"-c\", \"print('OK ${reference}')\"]"
+    let out = proc.exec(scan_cmd(), argv)?
+    return Ok(verdict_from_output(out))

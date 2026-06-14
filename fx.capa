@@ -1,0 +1,118 @@
+// capa_claimdesk.fx
+//
+// Phase 5 adapter: foreign-exchange conversion of a claim amount into the
+// settlement currency (EUR). A claim line may be filed in USD or GBP; the
+// engine totals are computed in EUR, so a non-EUR line has to be converted
+// to a EUR amount before it can be settled and reported.
+//
+// CAPABILITY: Net, and only Net. This module holds no Fs / Db / Env /
+// Proc / Clock / Random / Stdio. The conversion itself (rate -> cents) is
+// pure integer arithmetic; the ONE capability use is fetching a live rate
+// over the network, and that lives behind the `--live` path.
+//
+// ATTENUATION. main narrows the `Net` to exactly the rate host with
+// `net.restrict_to(fx_host())` before handing it here, so this adapter can
+// only ever reach that one host. `allows` is false for anything else,
+// which the demo prints to make the boundary visible. The narrowing is
+// monotonic: nothing downstream can widen it back.
+//
+// DETERMINISM. The default demo path uses a FIXED rate table
+// (`fixed_rate`), so the conversion is byte-identical on both backends and
+// makes no network call at all. The `--live` path (`fetch_rate`) performs
+// a real `net.get` to the attenuated host and is documented as
+// non-deterministic; it is exercised only when the operator passes
+// `--live` and is never part of the compared, cross-backend flow. Either
+// way the MANIFEST shows fx holding a `Net` attenuated to the rate host:
+// least-privilege over a real capability, proven, with the deterministic
+// demo intact.
+
+import capa_claimdesk.money
+
+// The single host this adapter is allowed to reach for a live rate. main
+// attenuates the Net to exactly this host before calling fetch_rate, so
+// the network authority of the whole fx adapter is one host.
+pub fun fx_host() -> String
+    return "api.frankfurter.app"
+
+// A fixed cross-rate table, quoted as units-of-EUR per 10000 units of the
+// source currency (so a four-decimal rate is exact integer arithmetic, no
+// Float). EUR->EUR is the identity 10000. The values are illustrative,
+// fixed constants: the point of the deterministic path is reproducibility,
+// not a live market.
+fun rate_per_10000(from: Currency) -> Int
+    return match from
+        EUR -> 10000        // 1.0000 EUR per EUR
+        USD -> 9200         // 0.9200 EUR per USD
+        GBP -> 11700        // 1.1700 EUR per GBP
+
+// Convert a Money amount into EUR using a four-decimal rate expressed as
+// "EUR per 10000 source units". Integer-only: cents * rate / 10000, with
+// rounding to the nearest cent. A EUR amount converts to itself exactly.
+fun apply_rate(amount: Money, rate_per_10000_units: Int) -> Money
+    let scaled = amount.cents * rate_per_10000_units
+    // Round half up to the nearest cent.
+    let rounded = (scaled + 5000) / 10000
+    return money(rounded, EUR)
+
+// True when an amount is already in the settlement currency, so no
+// conversion is needed. Matches on the closed Currency set rather than
+// using `==`, the idiom the rest of claimdesk uses for sum types.
+fun is_eur_currency(c: Currency) -> Bool
+    return match c
+        EUR -> true
+        USD -> false
+        GBP -> false
+
+// Convert a claim amount to EUR using the FIXED rate table. Pure, no
+// capability: the deterministic demo path. A EUR amount is returned
+// unchanged.
+pub fun convert_to_eur(amount: Money) -> Money
+    return apply_rate(amount, rate_per_10000(amount.currency))
+
+// Parse a decimal rate string like "0.9200" into "EUR per 10000 units"
+// integer form. Accepts an optional fractional part of up to four digits;
+// extra digits are truncated. A malformed body falls back to the identity
+// rate so a bad response cannot silently zero out an amount.
+fun parse_rate(body: String) -> Int
+    let t = body.trim()
+    let parts = t.split(".")
+    let whole = match parts.get(0)
+        Some(s) -> match parse_int(s)
+            Some(n) -> n
+            None    -> return 10000
+        None -> 0
+    var frac_str = match parts.get(1)
+        Some(s) -> s
+        None    -> "0000"
+    // Pad / truncate the fractional part to exactly four digits.
+    while frac_str.length() < 4
+        frac_str = frac_str + "0"
+    let frac4 = frac_str.substring(0, 4)
+    let frac = match parse_int(frac4)
+        Some(n) -> n
+        None    -> 0
+    return whole * 10000 + frac
+
+// Fetch a LIVE EUR-per-source rate over the network and convert. This is
+// the ONLY capability use in the module, and it is reached only on the
+// `--live` path. `net` is already attenuated to fx_host() by main, so a
+// request to any other host returns Err before any system call. The
+// response body is expected to be a bare decimal rate; on any error the
+// caller falls back to the fixed table, so `--live` never crashes the run.
+//
+// This path is NON-DETERMINISTIC (a live market rate) and is deliberately
+// excluded from the compared cross-backend flow; it exists to exercise the
+// real Net capability end-to-end under its attenuation.
+pub fun fetch_rate_to_eur(net: Net, amount: Money) -> Result<Money, IoError>
+    if is_eur_currency(amount.currency)
+        return Ok(amount)
+    let url = "https://${fx_host()}/latest?from=${currency_code(amount.currency)}&to=EUR"
+    let body = net.get(url)?
+    let rate = parse_rate(body)
+    return Ok(apply_rate(amount, rate))
+
+// A human-readable note describing a conversion, for the report/log. Pure.
+pub fun conversion_note(original: Money, converted: Money) -> String
+    if is_eur_currency(original.currency)
+        return "no conversion (already EUR)"
+    return "${format(original)} -> ${format(converted)} (fixed rate)"

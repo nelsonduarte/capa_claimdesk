@@ -1,0 +1,57 @@
+// capa_claimdesk.notify
+//
+// Phase 5: a USER-DEFINED capability. `Notifier` is a new capability
+// type declared by claimdesk itself (not a built-in). A function that
+// receives a `Notifier` can announce a claim decision and NOTHING else:
+// the authority "tell someone the verdict" is named in the type, and the
+// underlying Stdio it is built on is invisible past the factory.
+//
+// WHY a user capability here. The decision-notification step should be
+// able to dispatch a verdict without being handed raw Stdio (which would
+// also let it print anything, anywhere). `Notifier` is exactly that
+// narrowed authority. A real deployment swaps StdioNotifier for an
+// EmailNotifier or a WebhookNotifier (wrapping Net) without touching the
+// pipeline: the call site still just holds a `Notifier`.
+//
+// CAP-BEARING STRUCT + FACTORY. `StdioNotifier` implements `Notifier`, so
+// the structural "no built-in caps as struct fields" rule is relaxed for
+// it: it may hold a `Stdio` field. `make_stdio_notifier` is the factory
+// that consumes the low-level `Stdio` and produces the high-level
+// `Notifier`. That factory is the one visible point where the Stdio
+// authority is handed over; everything downstream sees only `Notifier`.
+//
+// DETERMINISM. StdioNotifier writes a fixed-format line per decision to
+// the caller's Stdio, so the notification output is byte-identical on
+// both backends. No capability beyond the wrapped Stdio is exercised.
+
+// The user-defined capability. One method: announce a decided claim. The
+// auditor sees a function that takes a `Notifier` can notify, and cannot
+// (through that parameter) write arbitrary output, open files, or reach
+// the network.
+pub capability Notifier
+    fun notify(self, claim_id: String, verdict: String, detail: String) -> Unit
+
+// Concrete implementor over Stdio. The cap-bearing relaxation lets the
+// Stdio live here, inside the adapter, rather than leaking into the
+// pipeline code that only wants to "notify".
+pub type StdioNotifier {
+    stdio: Stdio,
+    channel: String
+}
+
+// Factory: consumes the low-level Stdio and the channel label, produces
+// the high-level Notifier. The single visible hand-over of Stdio
+// authority. Returning a user-defined capability is allowed (a built-in
+// capability still could not be returned).
+pub fun make_stdio_notifier(stdio: Stdio, channel: String) -> StdioNotifier
+    return StdioNotifier { stdio: stdio, channel: channel }
+
+impl Notifier for StdioNotifier
+    fun notify(self, claim_id: String, verdict: String, detail: String) -> Unit
+        self.stdio.println("[notify:${self.channel}] ${claim_id} ${verdict} -- ${detail}")
+
+// Caller-side helper: receives the user-cap by parameter and dispatches a
+// decision through it. The pipeline calls THIS, holding only a `Notifier`,
+// so the notification step's whole authority is "notify".
+pub fun announce_decision(n: Notifier, claim_id: String, verdict: String, detail: String) -> Unit
+    n.notify(claim_id, verdict, detail)
