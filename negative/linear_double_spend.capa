@@ -1,0 +1,12 @@
+// GUARANTEE: a DisbursementAuthorization is a linear (one-shot) payment
+// token. Consuming it twice would pay the same approval twice and must
+// NOT type-check.
+// EXPECTED: capa --check fails with a use-after-consume error on the
+// second settle_authorization(authz).
+import capa_claimdesk.authz
+
+fun main()
+    let authz = authorize("CLM-1", 10000, "EUR", 1)
+    let receipt1 = settle_authorization(authz)
+    // Illegal: `authz` was already consumed (spent) above.
+    let receipt2 = settle_authorization(authz)

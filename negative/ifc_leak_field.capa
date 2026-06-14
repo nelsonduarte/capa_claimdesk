@@ -1,0 +1,13 @@
+// GUARANTEE: confidentiality (IFC). Employee.iban is @secret at the
+// point of definition. Reading it and sending it straight to a public
+// sink (Stdio.println) without a declassify is an information-flow
+// violation. Under @strict_ifc it is a HARD ERROR (a warning by default).
+// EXPECTED: capa --check fails with an information-flow / secret-to-sink
+// violation on the println of the raw IBAN.
+import capa_claimdesk.domain
+
+@strict_ifc()
+fun main(stdio: Stdio)
+    let emp = employee("E-1", "Ada", "Eng", "DE89370400440532013000")
+    // Illegal: the raw @secret IBAN flows to a public sink, no declassify.
+    stdio.println(emp.iban)

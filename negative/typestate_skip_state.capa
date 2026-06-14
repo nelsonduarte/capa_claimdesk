@@ -1,0 +1,17 @@
+// GUARANTEE: typestate protocol. A Draft claim cannot be approved;
+// approve() requires Claim[UnderReview]. Skipping Submitted and
+// UnderReview must NOT type-check.
+// EXPECTED: capa --check fails because approve expects Claim[UnderReview]
+// but is given a Claim[Draft].
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.claim
+
+fun main()
+    let emp = employee("E-1", "Ada", "Eng", "DE89370400440532013000")
+    var lines: List<ExpenseLine> = []
+    lines.push(expense_line("hotel", Lodging, money(8000, EUR)))
+    let draft = draft_claim("CLM-1", emp, lines, EUR)
+    // Illegal: approve needs Claim[UnderReview], not Claim[Draft].
+    let approved = approve(draft, "manager")
+    approved.archive()

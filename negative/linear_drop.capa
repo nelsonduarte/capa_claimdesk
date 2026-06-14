@@ -1,0 +1,10 @@
+// GUARANTEE: a DisbursementAuthorization is a linear value and cannot be
+// silently dropped. Minting one and letting it go out of scope without
+// consuming it would leave an approval unpaid and must NOT type-check.
+// EXPECTED: capa --check fails because `authz` is dropped without being
+// consumed ("dropped without being consumed").
+import capa_claimdesk.authz
+
+fun main()
+    // Illegal: minted but never consumed (no settle_authorization).
+    let authz = authorize("CLM-1", 10000, "EUR", 1)

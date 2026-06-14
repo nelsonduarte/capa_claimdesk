@@ -1,0 +1,31 @@
+// GUARANTEE: linearity of the claim value. submit() consumes the Draft
+// claim; using `draft` again after it has been consumed must NOT
+// type-check.
+// EXPECTED: capa --check fails with a use-after-consume error on the
+// second use of `draft` ("consumed earlier and cannot be used again").
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.claim
+
+// Consume a Draft fully, so this helper is a legitimate linear sink;
+// the violation in main is the *double* use of the same draft.
+fun process(consume c: Claim[Draft])
+    let s = submit(c, 9)
+    let ur = start_review(s, "reviewer")
+    let r = reject(ur, "manager")
+    r.discard()
+
+fun main()
+    let emp = employee("E-1", "Ada", "Eng", "DE89370400440532013000")
+    var lines: List<ExpenseLine> = []
+    lines.push(expense_line("hotel", Lodging, money(8000, EUR)))
+    let draft = draft_claim("CLM-1", emp, lines, EUR)
+    let submitted = submit(draft, 1)
+    submitted_sink(submitted)
+    // Illegal: `draft` was already consumed by submit above.
+    process(draft)
+
+fun submitted_sink(consume s: Claim[Submitted])
+    let ur = start_review(s, "reviewer")
+    let r = reject(ur, "manager")
+    r.discard()
