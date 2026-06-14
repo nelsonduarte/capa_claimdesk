@@ -1,0 +1,79 @@
+// capa_claimdesk.mask
+//
+// The audited @secret -> public bridges for the one regulated secret in
+// the domain: an employee's IBAN (domain.Employee.iban, marked @secret
+// at the point of definition in Phase 1). Phase 3 tightens that seed.
+//
+// Two security properties meet here:
+//
+//   1. CONFIDENTIALITY. The raw IBAN must never reach a public sink (a
+//      ledger line written through Fs.write, a Stdio line). The compiler
+//      propagates the @secret label through every value derived from the
+//      IBAN, so any such flow is an information-flow violation reported
+//      at compile time. The ONLY way to put IBAN-derived data into the
+//      public ledger is to route it through one of the bridges below,
+//      each of which states a regulatory reason that the SBOM records as
+//      a `declassification_sites` entry: a machine-checkable record of
+//      exactly where, and why, the program discloses sensitive data.
+//
+//   2. GRANULARITY. A declassify only breaks the secret-to-sink chain
+//      WITHIN the function it sits in: the result of a helper called
+//      with a @secret argument is conservatively re-tainted at the call
+//      site (whole-value granularity). So a declassify is load-bearing
+//      only in the same function as the public sink it feeds. Both
+//      primitives here keep their result @secret on purpose: mask_iban
+//      returns the @secret last-four display form and iban_fingerprint
+//      the @secret keyed correlation value. The single caller (main.capa)
+//      declassifies each one, with a stated reason, at the exact sink
+//      where it is shown or written. That is what makes those two
+//      declassifies load-bearing rather than dead no-ops at a boundary
+//      that re-taints the value anyway.
+//
+// Pure: zero capabilities. The masking is integer/substring arithmetic;
+// the fingerprint is capa_hash's pure HMAC. `capa --manifest` proves no
+// Fs / Net / Db / Clock / Random / Stdio is reachable from this module.
+// Identical under `--run` and `--wasm --run`.
+
+import capa_hash.hmac
+
+// Display form of an IBAN: the last four characters only, the rest
+// masked. The disclosed form is deliberately lossy (it cannot be used
+// to pay anyone), the GDPR/PCI-style data-minimisation default for
+// showing an account reference in a report or ledger line.
+//
+// This bridge does NOT declassify, and the @secret return type is the
+// reason it does not. A declassify only breaks the secret-to-sink chain
+// WITHIN its own function; the result of a function called with a
+// @secret argument is conservatively re-tainted @secret at the call
+// site (whole-value granularity), so an internal declassify here would
+// be a dead no-op the moment a caller passes the @secret IBAN in. The
+// masked suffix is therefore kept @secret and returned, and the caller
+// declassifies it at the exact sink where the masked text is shown, in
+// the same function as the display sink, where the declassify is
+// load-bearing. mask_iban owns only the minimisation arithmetic.
+pub fun mask_iban(iban: @secret String) -> @secret String
+    let n = iban.length()
+    if n <= 4
+        return "****"
+    let last4 = iban.substring(n - 4, n)
+    return "************${last4}"
+
+// Correlation-resistant keyed fingerprint of an IBAN: an HMAC-SHA256
+// under a managed key, used to identify or correlate the same employee
+// across ledger entries WITHOUT storing or exposing the IBAN itself.
+//
+// This helper does NOT declassify. A keyed one-way fingerprint of a
+// @secret IBAN is still sensitive: it is a partial oracle (it can
+// confirm a guessed IBAN), so it STAYS @secret. The declared @secret
+// return type carries that label across the call boundary to the
+// caller. The disclosure decision lives where the fingerprint is
+// actually written into the public ledger (ledger.capa), with a stated
+// reason, at the one sink where it escapes. That is what makes the
+// declassify load-bearing instead of a no-op at a boundary that
+// re-taints the value anyway.
+//
+// capa_hash takes (key, message): the managed key is the key, the
+// @secret IBAN is the message. The result derives from a @secret, so it
+// is @secret.
+pub fun iban_fingerprint(iban: @secret String, key: String) -> @secret String
+    return hmac_sha256_hex_utf8(key, iban)
