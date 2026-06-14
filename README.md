@@ -27,6 +27,16 @@ tested:
   Random / Stdio) and use no `Unsafe`, which `capa --manifest` proves
   mechanically. The decision then drives the typestate transition:
   `Approved` is approved and paid, `Rejected` is rejected.
+- The **audit ledger is tamper-evident, and the IBAN cannot leak**. Every
+  lifecycle event is appended to an HMAC-chained, append-only ledger
+  (altering any past event breaks every chain value after it), the chain
+  is re-verified in **constant time**, and the regulated secret, the
+  employee IBAN, is held under **information-flow control**: it reaches
+  the ledger only as a masked suffix or a keyed one-way fingerprint, each
+  through a single audited `declassify`. Remove a declassify and the
+  build hard-fails. The integrity primitives come from the SLSA-verified
+  `capa_hash` library; the ledger is written through an `Fs` capability
+  attenuated to the output directory.
 
 The whole engine is designed to run **byte-identically** under the
 Python interpreter (`--run`) and the WebAssembly backend
@@ -38,24 +48,32 @@ is capability-free.
 > - **Phase 1** landed the repository and the domain core: money, the
 >   domain vocabulary, the claim-lifecycle typestate, and the linear
 >   payment authorization, plus a deterministic demo.
-> - **Phase 2 (this commit)** adds the **policy rule engine**: a `Rule`
->   trait with several concrete policy rules, a decision engine that
->   dispatches dynamically over a `List<Rule>` and aggregates the
->   outcomes into a `Decision`, and the integration that lets that
->   decision drive the `UnderReview -> Approved` / `-> Rejected`
->   transition. The engine is provably capability-free.
+> - **Phase 2** adds the **policy rule engine**: a `Rule` trait with
+>   several concrete policy rules, a decision engine that dispatches
+>   dynamically over a `List<Rule>` and aggregates the outcomes into a
+>   `Decision`, and the integration that lets that decision drive the
+>   `UnderReview -> Approved` / `-> Rejected` transition. The engine is
+>   provably capability-free.
+> - **Phase 3 (this commit)** adds the **tamper-evident audit ledger and
+>   information-flow control over the IBAN**: an HMAC-chained append-only
+>   ledger (`ledger.capa`), constant-time chain verification, and the
+>   `@secret` IBAN bridges (`mask.capa`) that mask and fingerprint the
+>   account through audited declassifies. It pulls in its first external
+>   dependency, the SLSA-verified `capa_hash`, and writes the ledger
+>   through an attenuated `Fs`. See [Phase 3](#phase-3-the-tamper-evident-ledger-and-iban-information-flow).
 >
-> Later phases add an append-only ledger with information-flow control,
-> the Db / Net / Proc / Fs adapters, a CLI, a test suite, and the
-> governance / SBOM pack.
+> Later phases add the Db / Net / Proc adapters, a CLI, a test suite, and
+> the governance / SBOM pack.
 
 ## Running the demo
 
-From the repository root:
+From Phase 3 on, claimdesk has one external dependency (`capa_hash`).
+Vendor and verify it once with the package manager, then run:
 
 ```sh
+capa install                    # vendors + verifies capa_hash (GPG tag + SLSA)
 capa --run main.capa
-capa --wasm --run main.capa     # identical output
+capa --wasm --run main.capa     # identical output, byte for byte
 ```
 
 If claimdesk is checked out under a directory that is not on the default
@@ -63,13 +81,17 @@ module search path, point `CAPA_PATH` at the parent of the repo so the
 `capa_claimdesk.*` modules resolve, e.g.
 `CAPA_PATH=/path/to/repos capa --run main.capa`.
 
+The run writes the audit ledger to `out/ledger.log` (gitignored). The
+`Fs` capability is attenuated to `out/` before any write, so even a
+mistargeted path could not escape that directory.
+
 Expected output (the same on both backends):
 
 ```
-claimdesk Phase 2 demo: policy rule engine -> decision
-======================================================
+claimdesk Phase 3 demo: tamper-evident ledger + IBAN information-flow
+====================================================================
 
-[Draft]       claim C-2026-0007 opened for Alice Mendes
+[Draft]       claim C-2026-0007 opened for Alice Mendes (IBAN ************0154)
               3 lines, requested total 553.15 EUR
 [Submitted]   submitted at tick 20260614
 [UnderReview] picked up by R-3001 (Bruno Antunes)
@@ -83,7 +105,7 @@ claimdesk Phase 2 demo: policy rule engine -> decision
 [Settled]     paid 553.15 EUR to Alice Mendes
               receipt: claim C-2026-0007, nonce 1
 
-[Draft]       claim C-2026-0008 opened for Bruno Costa
+[Draft]       claim C-2026-0008 opened for Bruno Costa (IBAN ************0267)
               4 lines, requested total 153.00 EUR
 [Submitted]   submitted at tick 20260614
 [UnderReview] picked up by R-3001 (Bruno Antunes)
@@ -96,7 +118,19 @@ claimdesk Phase 2 demo: policy rule engine -> decision
               => REJECTED: Meals subtotal 108.00 EUR exceeds 75.00 EUR; duplicate line: "Taxi to venue" appears twice
 [Rejected]    by M-4002 (Carla Dias): Meals subtotal 108.00 EUR exceeds 75.00 EUR; duplicate line: "Taxi to venue" appears twice
 
-demo complete: one claim approved and paid, one rejected.
+ledger written to out/ledger.log (7 entries)
+ledger verified: 7 entries, HMAC chain intact
+
+demo complete: one claim approved and paid, one rejected; ledger chained and verified.
+```
+
+Each ledger line carries the masked IBAN suffix and the keyed
+fingerprint, never the account, and a chain MAC over the previous line:
+
+```
+0|C-2026-0007|SUBMITTED|E-1001|fp=79d6...a789|payee=************0154|0||3 lines, requested 553.15 EUR|chain=425b...882f
+1|C-2026-0007|UNDER_REVIEW|R-3001 (Bruno Antunes)|fp=79d6...a789|payee=************0154|0||picked up by reviewer|chain=b7c3...64ad
+...
 ```
 
 ## Modules
@@ -109,7 +143,9 @@ demo complete: one claim approved and paid, one rejected.
 | `claim.capa`   | The `typestate Claim` lifecycle (`Draft -> Submitted -> UnderReview -> Approved -> Settled`, with `UnderReview -> Rejected`) and its transitions. |
 | `rules.capa`   | The `Rule` trait, the `RuleOutcome` sum type, and the concrete expense-policy rules (currency consistency, total limit, per-category limit, receipt required, duplicate line). Provably capability-free. |
 | `engine.capa`  | The `Decision` sum type and the decision engine: dispatches a `List<Rule>` dynamically, folds the outcomes (via a generic `Tally<T>` / `Evaluated<T>`), and returns a `Decision`. Provably capability-free. |
-| `main.capa`    | The deterministic demo: two claims run through the lifecycle, the engine's `Decision` choosing approve-and-pay vs reject. |
+| `mask.capa`    | The audited `@secret`-to-public IBAN bridges: `mask_iban` (last-four display suffix) and `iban_fingerprint` (keyed one-way HMAC). Both keep their result `@secret`; the caller declassifies at the sink. Pure (zero capabilities). |
+| `ledger.capa`  | The append-only, HMAC-chained tamper-evident ledger: event serialization, chaining (`chain_from` / `build_chain`), constant-time verification (`verify_chain`, `mac_matches`), and persistence. Pure except `write_ledger`, which holds only `Fs`. |
+| `main.capa`    | The deterministic demo: two claims run through the lifecycle, the engine's `Decision` choosing approve-and-pay vs reject, every event chained into the ledger, the IBAN masked/fingerprinted through audited declassifies, and the chain verified in constant time at the end. |
 
 ## The policy rule engine (Phase 2)
 
@@ -219,15 +255,98 @@ format(money(-705, USD))        // "-7.05 USD"
 add(money(100, EUR), money(50, USD))   // Err(CurrencyMismatch(EUR, USD))
 ```
 
-## Information-flow intent
+## Phase 3: the tamper-evident ledger and IBAN information-flow
 
-`Employee.iban` is marked `@secret` at its definition. That single
-annotation is the seed for the information-flow-control phase: the
-compiler will propagate a secret label through every value derived from
-the IBAN, and the payout code will have to route it through an audited
-declassify before it can reach a public sink (a log line, a CSV export,
-a network call). Marking it in Phase 1 means the IFC phase tightens an
-existing surface rather than retrofitting annotations later.
+Phase 3 is the security core. It turns the lifecycle into an auditable
+record and proves, at compile time, that the one regulated secret never
+escapes.
+
+### The HMAC-chained audit ledger
+
+Every lifecycle event (submitted, under review, approved, rejected,
+paid) becomes one append-only ledger entry. The entries are chained:
+
+```
+chain[i] = HMAC-SHA256(chain-key, chain[i-1] || "|" || serialized_event_i)
+```
+
+anchored to a fixed `GENESIS`. The serialization is the tamper surface:
+change any field of any past event and its body bytes change, so every
+downstream chain MAC fails to recompute. The HMAC is the real thing,
+from the `capa_hash` library, so the chain is identical byte-for-byte on
+both backends.
+
+### Constant-time verification
+
+`verify_chain` re-derives the whole chain and compares each stored MAC
+against the recomputed one with `strings_equal` from `capa_hash`, a
+**constant-time** comparison, not `==`. Comparing a MAC with `==`
+short-circuits at the first differing byte (CWE-208), a timing oracle an
+attacker can use to forge a tag byte by byte; the constant-time compare
+looks at every byte with no early return. The MAC-equality wrapper
+`mac_matches` carries the `@constant_time()` marker, which the analyzer
+checks (`capa --manifest` reports `"constant_time": true` for it).
+
+### The IBAN never leaks: information-flow control
+
+`Employee.iban` is `@secret`. It reaches the ledger and the console only
+in one of two minimised forms, each produced by `mask.capa` and disclosed
+through a single audited `declassify` with a GDPR reason:
+
+- **masked suffix** (`************0154`) for display, and
+- **keyed fingerprint** (an HMAC under a managed key) to correlate an
+  employee across entries without exposing the account.
+
+`mask.capa` keeps *both* results `@secret`; the disclosure is taken at
+the sink, in `run_claim`, which holds the `Stdio` draft line and the
+ledger's `Fs.write`. A `declassify` only breaks the secret-to-sink chain
+within its own function, so placing both at that one boundary is what
+makes them load-bearing and keeps the SBOM's `declassification_sites`
+count down to exactly two, both reviewable.
+
+This is a **verifiable** property, not a convention. Delete either
+declassify and `capa --check` hard-fails. Removing the fingerprint
+declassify, for example:
+
+```
+error: information-flow: a @secret value is passed to 'write_ledger' as
+events, which reaches a public sink inside 'write_ledger' (it sends data
+out of the program). Route it through declassify(value, reason: "...")
+if this disclosure is intended.
+```
+
+`run_claim` is marked `@strict_ifc()`, so these are hard errors, not
+warnings.
+
+> **A note on field-level `@secret` (compiler limitation found while
+> building this).** Reading a `@secret` *struct field* (`employee.iban`)
+> currently drops the field's secret label, both for a direct sink and
+> across a function return. The IBAN is therefore re-bound into an
+> explicitly `@secret` local (`let iban: @secret String = employee.iban`)
+> at the top of `run_claim` before anything is derived from it; that
+> annotation is what re-establishes the label and makes the sinks
+> guarded and the declassifies load-bearing. The seam is one line and is
+> commented in `main.capa`. This is reported upstream as a compiler bug;
+> the workaround keeps the showcased property real and enforced.
+
+### Capabilities stay least-privilege
+
+Adding `capa_hash` does not widen the capability surface: it is pure,
+zero-capability code. `mask.capa` is pure; in `ledger.capa` only
+`write_ledger` holds `Fs` (and the verification, `verify_chain` /
+`mac_matches`, is pure). The ledger is written through an `Fs` attenuated
+with `fs.restrict_to("out/")`, so the persistence authority is bounded to
+the output directory. `capa --manifest main.capa` reports
+`declassification_sites: 2`, `mac_matches` constant-time, and no
+`Unsafe` anywhere.
+
+### Supply chain
+
+`capa_hash` is pinned in `capa.toml` by git tag `v0.1.2` and the
+publisher key `6C1D222D491FB88031E041A536CFB426101AA24B`. `capa install`
+vendors it into `vendor/`, writes the resolved commit into `capa.lock`,
+and verifies the GPG tag signature and SLSA provenance before any check.
+`vendor/` and `capa.lock` are gitignored pre-publication.
 
 ## License
 
