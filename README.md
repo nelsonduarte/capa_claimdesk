@@ -768,6 +768,72 @@ code (never the compiler) and reported upstream with a minimal repro:
    wildcard for-pattern (`for _ in 0..n`) and attenuation over a function
    **call result** (both above).
 
+## Phase 7: governance and SBOM by construction
+
+The program is **complete**. The final phase turns every guarantee the
+earlier phases made into **machine-readable, byte-reproducible evidence**
+and a document that maps each claim to it.
+
+Everything lives under [`governance/`](governance/):
+
+- [`GOVERNANCE.md`](governance/GOVERNANCE.md) maps each guarantee
+  (typestate, linearity, IFC, constant-time, least-privilege,
+  tamper-evident integrity) to the exact place it shows up in the
+  manifest / SBOM and to the command that re-proves it, plus an honest,
+  non-exhaustive CRA Annex I and GDPR data-minimisation mapping.
+- [`generate.sh`](governance/generate.sh) emits the five artefacts
+  (`manifest.json`, `sbom.cyclonedx.json`, `sbom.spdx.json`,
+  `vex.cyclonedx.json`, `provenance.slsa.json`) from `main.capa`. It
+  pins `SOURCE_DATE_EPOCH` from the versioned
+  [`governance/SOURCE_DATE_EPOCH`](governance/SOURCE_DATE_EPOCH) file, so
+  running it twice produces **byte-identical** output, build timestamps
+  included. The five artefacts are **committed** (this is a showcase: the
+  SBOM in the tree is part of the demo), with the standing promise that a
+  re-run leaves `git status` clean.
+
+### Self-governance: the program audits its own SBOM
+
+[`governance/audit.capa`](governance/audit.capa) closes the loop. It is a
+standalone Capa program that reads the committed CycloneDX SBOM back in
+with the [`capa_sbom`](https://github.com/nelsonduarte/capa_sbom) library
+(the eighth seed library this showcase exercises) and checks a governance
+policy against it, printing PASS/FAIL:
+
+- **Policy 1**: the pure core (`rules` / `engine` / `mask` / `report` /
+  `money` / `claim` / `domain`) declares **zero** capabilities.
+- **Policy 2**: only the FX egress (`fx`, `main`) reaches the `Net`
+  capability.
+
+```sh
+CAPA_PATH=.. capa --run       governance/audit.capa   # AUDIT PASSED
+CAPA_PATH=.. capa --wasm --run governance/audit.capa   # identical PASS
+```
+
+It is **deliberately standalone**: it imports only `capa_sbom` (plus the
+`Fs` / `Stdio` it needs), never a `capa_claimdesk` module. Capa links all
+`pub` items into one flat global namespace (the Phase 5 finding above),
+so a program pulling in both `capa_sbom` and the full claimdesk module
+graph could hit a name clash. Reading only the JSON the compiler emitted
+sidesteps that: the auditor never sees the claimdesk source.
+
+### What the showcase demonstrates
+
+Across seven phases, capa_claimdesk exercises, end to end and on both the
+Python and Wasm backends:
+
+| Language feature | Guarantee it makes unrepresentable | Proof |
+|---|---|---|
+| Typestate (`Claim[State]`) | out-of-order lifecycle transitions | `typestate_*` negative cases; `typestates` in the manifest |
+| Linear types (payment token) | double payment / silently-unpaid approval | `linear_*` negative cases; `linear_obligations` in the manifest |
+| Information-flow control (`@secret` IBAN) | the IBAN leaking to a public sink unmasked | `ifc_leak_*` negative cases; 3 `declassifications` in the manifest |
+| Constant-time (`@constant_time`) | timing-leaking the ledger MAC check | `ct_secret_branch` negative case; `constant_time:true` on `mac_matches` |
+| Capabilities + least privilege | a pure function reaching the outside world | `provably_excluded_capabilities`; `functions_crossing_unsafe:0`; `audit.capa` |
+| HMAC chain (`capa_hash`) | tampering with a past ledger entry undetectably | `verify_chain`; the chained `out/ledger.log` |
+| Verified dependencies | an unpinned / unsigned supply-chain edit | `capa install` (lockfile SHA + GPG tag + SLSA provenance) |
+
+The point is the same throughout: the hard parts are not merely tested,
+they are **made unrepresentable**, and the compiler emits the evidence.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
