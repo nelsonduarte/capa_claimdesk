@@ -1,0 +1,114 @@
+// capa_claimdesk.config
+//
+// Phase 4 adapter: the policy configuration loader. It reads the
+// numeric thresholds of the expense policy (the overall cap, the per-
+// category Meals cap, the receipt threshold) from the environment
+// through an `Env` capability, and builds the `List<Rule>` the engine
+// applies. Policy is data: a different deployment sets different env
+// vars and gets a different policy, never edits a rule.
+//
+// CAPABILITY: Env, and only Env. This module holds no Fs / Db / Net /
+// Stdio; it turns environment state into pure policy data.
+//
+// ATTENUATION. `load_policy_config` receives the raw `Env` from main,
+// then immediately attenuates it with `restrict_to_keys` to exactly the
+// four CLAIMDESK_* configuration keys it reads. From that point the
+// handle cannot observe any other variable: `allows` returns false for
+// anything outside the set, which the demo prints to make the narrowing
+// visible. The attenuation is monotonic, so nothing downstream can widen
+// it back.
+//
+// INFORMATION FLOW. `env.get` is secret-by-default: every value it
+// returns is `@secret`, because the environment is where deployment
+// secrets live. A policy threshold (a public number like "100000"
+// cents) is NOT sensitive, so each one is declassified at the point of
+// parse with an explicit, auditable reason. These declassifies are the
+// honest seam: they say, in the SBOM, "this environment value is a
+// public config number, not a secret". They are few (one per config
+// key) and reviewable.
+//
+// DETERMINISM. The demo must not depend on the host environment, so
+// every key has a fixed default and the defaults reproduce the Phase 3
+// policy exactly. With none of the CLAIMDESK_* variables set (the demo's
+// normal state), `load_policy_config` returns the same policy on every
+// run and on both backends. Setting a variable overrides its default;
+// the demo does not rely on that path, it only proves the wiring.
+
+import capa_claimdesk.money
+import capa_claimdesk.rules
+
+// The configuration keys this loader is allowed to read. The attenuated
+// Env is scoped to exactly this set; `allows` is false for everything
+// else. Centralised here so the attenuation and the reads cannot drift.
+fun config_keys() -> List<String>
+    return [
+        "CLAIMDESK_TOTAL_LIMIT",
+        "CLAIMDESK_MEALS_LIMIT",
+        "CLAIMDESK_RECEIPT_THRESHOLD",
+        "CLAIMDESK_TOTAL_WARN_MARGIN"
+    ]
+
+// The resolved policy thresholds, all in integer cents. A plain data
+// record: the output of reading config, the input to building rules.
+pub type PolicyConfig {
+    total_limit_cents: Int,
+    meals_limit_cents: Int,
+    receipt_threshold_cents: Int,
+    total_warn_margin_cents: Int
+}
+
+// Read one numeric config key. `env.get` yields Option<@secret String>;
+// a present value is parsed and, being a public policy number rather
+// than a secret, declassified with a stated reason so it can flow into
+// the (public) rule thresholds and the report. An absent or unparseable
+// value falls back to `default`, which keeps the demo deterministic when
+// the variable is not set. The declassify is the single auditable point
+// where an environment value is asserted to be non-sensitive config.
+fun read_cents(env: Env, key: String, default: Int) -> Int
+    return match env.get(key)
+        None -> default
+        Some(raw) ->
+            let public_raw = declassify(
+                raw,
+                reason: "policy threshold from environment: a public config number (a cents limit), not a deployment secret"
+            )
+            match parse_int(public_raw.trim())
+                Some(n) -> n
+                None    -> default
+
+// Load the policy configuration from the environment. The Env is
+// attenuated to the known config keys before any read, so this loader
+// has authority over exactly its four variables and nothing else.
+// Defaults reproduce the Phase 3 policy, so the demo is deterministic
+// with no CLAIMDESK_* variables set.
+pub fun load_policy_config(env: Env) -> PolicyConfig
+    let scoped = env.restrict_to_keys(config_keys())
+    return PolicyConfig {
+        total_limit_cents: read_cents(scoped, "CLAIMDESK_TOTAL_LIMIT", 100000),
+        meals_limit_cents: read_cents(scoped, "CLAIMDESK_MEALS_LIMIT", 7500),
+        receipt_threshold_cents: read_cents(scoped, "CLAIMDESK_RECEIPT_THRESHOLD", 40000),
+        total_warn_margin_cents: read_cents(scoped, "CLAIMDESK_TOTAL_WARN_MARGIN", 5000)
+    }
+
+// Build the standard claimdesk policy from a resolved config. The
+// currency-consistency and duplicate-line rules carry no threshold, so
+// they are constant; the three numeric rules take their caps from the
+// config. This is the same rule list Phase 3 built by hand, now sourced
+// from configuration data.
+pub fun policy_from_config(cfg: PolicyConfig) -> List<Rule>
+    var rules: List<Rule> = []
+    rules.push(CurrencyConsistencyRule { expected: EUR })
+    rules.push(TotalLimitRule { limit: money(cfg.total_limit_cents, EUR), warn_margin: cfg.total_warn_margin_cents })
+    rules.push(CategoryLimitRule { category: Meals, limit: money(cfg.meals_limit_cents, EUR) })
+    rules.push(ReceiptRequiredRule { threshold: money(cfg.receipt_threshold_cents, EUR) })
+    rules.push(DuplicateLineRule {})
+    return rules
+
+// A one-line, human-readable summary of the resolved config, for the
+// demo banner. Every value is a declassified-public cents number, so
+// this reaches Stdio without any further declassify.
+pub fun describe_config(cfg: PolicyConfig) -> String
+    let total = format(money(cfg.total_limit_cents, EUR))
+    let meals = format(money(cfg.meals_limit_cents, EUR))
+    let receipt = format(money(cfg.receipt_threshold_cents, EUR))
+    return "total<=${total}, Meals<=${meals}, receipt>=${receipt}"

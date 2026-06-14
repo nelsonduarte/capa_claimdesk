@@ -1,0 +1,8 @@
+claim_id,employee_id,employee_name,department,iban,category,description,amount_major,amount_minor,currency
+C-2026-0007,E-1001,Alice Mendes,Engineering,PT50000201231234567890154,Travel,Lisbon -> Berlin flight,312,40,EUR
+C-2026-0007,E-1001,Alice Mendes,Engineering,PT50000201231234567890154,Lodging,Two nights conference hotel,186,0,EUR
+C-2026-0007,E-1001,Alice Mendes,Engineering,PT50000201231234567890154,Meals,Client dinner,54,75,EUR
+C-2026-0008,E-1002,Bruno Costa,Sales,PT50000201231234567890267,Meals,Team lunch,48,0,EUR
+C-2026-0008,E-1002,Bruno Costa,Sales,PT50000201231234567890267,Meals,Team dinner,60,0,EUR
+C-2026-0008,E-1002,Bruno Costa,Sales,PT50000201231234567890267,Travel,Taxi to venue,22,50,EUR
+C-2026-0008,E-1002,Bruno Costa,Sales,PT50000201231234567890267,Travel,Taxi to venue,22,50,EUR

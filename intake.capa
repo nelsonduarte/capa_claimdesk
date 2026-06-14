@@ -1,0 +1,168 @@
+// capa_claimdesk.intake
+//
+// Phase 4 adapter: batch claim import from a CSV file. It reads an
+// expense-line CSV through an attenuated `Fs`, parses it with the
+// capa_csv library (header view), groups the lines by claim id, and
+// builds the domain's `Employee` + `List<ExpenseLine>` for each claim.
+// The pure engine downstream never sees a String row; it sees typed
+// domain values.
+//
+// CAPABILITY: Fs, and only Fs (for the one read). Parsing and model
+// construction are pure (capa_csv is zero-capability). This module holds
+// no Db / Net / Env / Stdio.
+//
+// ATTENUATION. `import_claims` reads through an `Fs` the caller has
+// already narrowed to the data directory; the read path is checked
+// against that prefix, so intake cannot read outside it.
+//
+// INFORMATION FLOW. One CSV column is the employee IBAN, which feeds the
+// `@secret` `Employee.iban` field. A public CSV string flowing INTO a
+// secret field is always allowed (the label only ever rises), so no
+// declassify is needed here, and that is the point: the imported IBAN
+// enters the secret domain at construction and stays there. It cannot
+// reach a sink without the same audited declassify the rest of the
+// program requires. The intake adapter does not read the iban back out
+// or print it, so it introduces ZERO new declassification sites: the
+// IFC surface is unchanged by adding a CSV source.
+//
+// ERRORS. Every failure is a typed `Result`: a parse error from capa_csv
+// (`CsvError`), a missing column, an unparseable amount, or an unknown
+// currency code. Malformed input never crashes the importer.
+
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_csv.model
+import capa_csv.header
+
+// The import error channel. Wraps capa_csv's CsvError for parse / column
+// failures and adds the domain-level failures (a non-numeric amount, an
+// unknown currency code) that only this adapter can detect.
+pub type IntakeError =
+    CsvParse(CsvError)
+    BadAmount(String)
+    BadCurrency(String)
+    NoRows
+
+pub fun intake_error_message(e: IntakeError) -> String
+    return match e
+        CsvParse(c)   -> "csv: ${error_message(c)}"
+        BadAmount(s)  -> "bad amount: ${s}"
+        BadCurrency(s) -> "unknown currency code: ${s}"
+        NoRows        -> "no claim rows in input"
+
+// One imported claim: the id, the (single) employee it belongs to, and
+// its expense lines in file order. The intake groups the flat CSV rows
+// into these; the caller hands each to the lifecycle.
+pub type ImportedClaim {
+    id: String,
+    employee: Employee,
+    lines: List<ExpenseLine>
+}
+
+// Parse a currency code into the closed Currency set. An unknown code is
+// a typed error, never a silent default.
+fun parse_currency(code: String) -> Result<Currency, IntakeError>
+    return match code
+        "EUR" -> Ok(EUR)
+        "USD" -> Ok(USD)
+        "GBP" -> Ok(GBP)
+        _     -> Err(BadCurrency(code))
+
+// Parse a column to Int, mapping the absence of a number to a typed
+// BadAmount carrying the offending field.
+fun parse_amount_part(s: String) -> Result<Int, IntakeError>
+    return match parse_int(s.trim())
+        Some(n) -> Ok(n)
+        None    -> Err(BadAmount(s))
+
+// Parse one category cell into the closed Category set. An unrecognised
+// label falls back to `Other`, the catch-all the domain already models,
+// rather than failing the whole import on a typo.
+fun parse_category(name: String) -> Category
+    return match name.trim()
+        "Travel"    -> Travel
+        "Meals"     -> Meals
+        "Lodging"   -> Lodging
+        "Equipment" -> Equipment
+        _           -> Other
+
+// Read one named column from a header row, lifting capa_csv's CsvError
+// into the intake channel.
+fun col(table: HeaderTable, row: Int, name: String) -> Result<String, IntakeError>
+    return match table.get(row, name)
+        Ok(v)  -> Ok(v)
+        Err(e) -> Err(CsvParse(e))
+
+// Build one ExpenseLine from a CSV row: description, category, and a
+// Money assembled from the major/minor/currency columns.
+fun line_from_row(table: HeaderTable, row: Int) -> Result<ExpenseLine, IntakeError>
+    let description = col(table, row, "description")?
+    let category = parse_category(col(table, row, "category")?)
+    let major = parse_amount_part(col(table, row, "amount_major")?)?
+    let minor = parse_amount_part(col(table, row, "amount_minor")?)?
+    let currency = parse_currency(col(table, row, "currency")?)?
+    return Ok(expense_line(description, category, money(major * 100 + minor, currency)))
+
+// Build the Employee for a row. The `iban` column flows into the
+// `@secret` Employee.iban field; a public-to-secret assignment is always
+// allowed, so the imported account enters and stays in the secret domain
+// with no declassify here.
+fun employee_from_row(table: HeaderTable, row: Int) -> Result<Employee, IntakeError>
+    let id = col(table, row, "employee_id")?
+    let name = col(table, row, "employee_name")?
+    let department = col(table, row, "department")?
+    let iban = col(table, row, "iban")?
+    return Ok(employee(id, name, department, iban))
+
+// Import claims from CSV text already in memory. Pure (no capability):
+// parse, then fold the data rows into claims grouped by claim_id,
+// preserving file order for both claims and their lines. Exposed
+// separately from `import_claims` so it can be unit-tested without an Fs.
+pub fun import_from_text(text: String) -> Result<List<ImportedClaim>, IntakeError>
+    let table = match parse_headed(text)
+        Ok(t)  -> t
+        Err(e) -> return Err(CsvParse(e))
+    if table.length() == 0
+        return Err(NoRows)
+
+    var claims: List<ImportedClaim> = []
+    var i = 0
+    let n = table.length()
+    for _ in 0..n
+        let claim_id = col(table, i, "claim_id")?
+        let line = line_from_row(table, i)?
+        // Append the line to its claim's group, or start a new group.
+        // List-element assignment is not a backend primitive, so the
+        // accumulator is rebuilt: the matching claim gets the new line,
+        // every other claim is carried through unchanged. The row count
+        // is small (one batch), so the rebuild is not a concern.
+        let already = claims.find(fun (c: ImportedClaim) -> Bool => c.id == claim_id)
+        match already
+            Some(_) ->
+                var rebuilt: List<ImportedClaim> = []
+                for c in claims
+                    if c.id == claim_id
+                        var merged: List<ExpenseLine> = []
+                        for l in c.lines
+                            merged.push(l)
+                        merged.push(line)
+                        rebuilt.push(ImportedClaim { id: c.id, employee: c.employee, lines: merged })
+                    else
+                        rebuilt.push(c)
+                claims = rebuilt
+            None ->
+                let emp = employee_from_row(table, i)?
+                var first: List<ExpenseLine> = []
+                first.push(line)
+                claims.push(ImportedClaim { id: claim_id, employee: emp, lines: first })
+        i = i + 1
+    return Ok(claims)
+
+// Import a batch of claims from a CSV file read through `fs`. The only
+// capability use in this module: a single attenuated read. Parse and
+// grouping are pure.
+pub fun import_claims(fs: Fs, path: String) -> Result<List<ImportedClaim>, IntakeError>
+    let text = match fs.read(path)
+        Ok(t)  -> t
+        Err(_) -> return Err(NoRows)
+    return import_from_text(text)

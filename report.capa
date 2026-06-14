@@ -1,0 +1,145 @@
+// capa_claimdesk.report
+//
+// Phase 4 adapter: the processing-summary reporter. A `Reporter` trait
+// with one `render` method and three concrete implementations
+// (TextReporter, CsvReporter, JsonReporter), chosen at runtime and
+// dispatched dynamically. The render is PURE: it turns the run's summary
+// data into a String. main holds the capability that emits the String
+// (an attenuated `Fs.write` to the output directory, or `Stdio`), so the
+// formatting and the IO authority stay cleanly separated.
+//
+// CAPABILITY: none. This module is pure: a trait, three impls, and the
+// formatting helpers. The IO is the caller's.
+//
+// INFORMATION FLOW. The report renders only already-public, IBAN-
+// minimised fields (the masked suffix, the verdict, the settled amount):
+// the same forms the ledger and the store hold, all from the program's
+// existing audited declassifies. It adds ZERO declassification sites.
+//
+// TRAITS + DISPATCH. `pick_reporter` returns a `Reporter` chosen by a
+// format name; `render_report` calls `r.render(...)` on that trait
+// object, reaching TextReporter's, CsvReporter's, or JsonReporter's impl
+// by dynamic dispatch. CsvReporter builds a capa_csv `Table` and serial-
+// ises it with the library's `write`; JsonReporter builds a `JsonValue`
+// and serialises it with `to_json`.
+//
+// DETERMINISM. Every renderer iterates its inputs in order and uses only
+// integer/string formatting, so a given summary renders byte-identically
+// on both backends, in every format.
+
+import capa_claimdesk.money
+import capa_claimdesk.store
+import capa_csv.model
+import capa_csv.write
+
+// One row of the per-claim section of the report: the claim id, its
+// verdict, the settled amount, and the masked payee. Public data only.
+pub type ClaimLine {
+    claim_id: String,
+    verdict: String,
+    amount_cents: Int,
+    currency: Currency,
+    payee_masked: String
+}
+
+// The full input to a report: the per-claim lines and the per-verdict
+// rollup (the same VerdictSummary the store's query produced). A pure
+// data bundle, assembled by main from the run's results.
+pub type ReportData {
+    title: String,
+    claims: List<ClaimLine>,
+    summary: List<VerdictSummary>
+}
+
+// The reporting trait: render the run summary to a String in some
+// concrete format. One method, three implementations, dynamic dispatch.
+pub trait Reporter
+    fun render(self, data: ReportData) -> String
+
+// ---- TextReporter: a human-readable block ----
+
+pub type TextReporter {
+}
+
+impl Reporter for TextReporter
+    fun render(self, data: ReportData) -> String
+        var out = data.title + "\n"
+        out = out + "claims:\n"
+        for c in data.claims
+            let amount = format(money(c.amount_cents, c.currency))
+            out = out + "  ${c.claim_id}  ${c.verdict}  ${amount}  payee ${c.payee_masked}\n"
+        out = out + "totals:\n"
+        for s in data.summary
+            out = out + "  " + summary_line(s) + "\n"
+        return out
+
+// ---- CsvReporter: an RFC 4180 table via capa_csv write ----
+
+pub type CsvReporter {
+}
+
+impl Reporter for CsvReporter
+    fun render(self, data: ReportData) -> String
+        var rows: List<Row> = []
+        var header: List<String> = []
+        header.push("claim_id")
+        header.push("verdict")
+        header.push("amount_cents")
+        header.push("currency")
+        header.push("payee_masked")
+        rows.push(Row { fields: header })
+        for c in data.claims
+            var fields: List<String> = []
+            fields.push(c.claim_id)
+            fields.push(c.verdict)
+            fields.push("${c.amount_cents}")
+            fields.push(currency_code(c.currency))
+            fields.push(c.payee_masked)
+            rows.push(Row { fields: fields })
+        return write(Table { rows: rows })
+
+// ---- JsonReporter: a JsonValue serialised with to_json ----
+
+pub type JsonReporter {
+}
+
+impl Reporter for JsonReporter
+    fun render(self, data: ReportData) -> String
+        var claim_arr: List<JsonValue> = []
+        for c in data.claims
+            let obj: Map<String, JsonValue> = new_map()
+            obj.set("claim_id", JStr(c.claim_id))
+            obj.set("verdict", JStr(c.verdict))
+            obj.set("amount_cents", JNum(to_float(c.amount_cents)))
+            obj.set("currency", JStr(currency_code(c.currency)))
+            obj.set("payee_masked", JStr(c.payee_masked))
+            claim_arr.push(JObj(obj))
+        var summary_arr: List<JsonValue> = []
+        for s in data.summary
+            let obj: Map<String, JsonValue> = new_map()
+            obj.set("verdict", JStr(s.verdict))
+            obj.set("count", JNum(to_float(s.count)))
+            obj.set("total_cents", JNum(to_float(s.total_cents)))
+            summary_arr.push(JObj(obj))
+        let root: Map<String, JsonValue> = new_map()
+        root.set("title", JStr(data.title))
+        root.set("claims", JArr(claim_arr))
+        root.set("summary", JArr(summary_arr))
+        return to_json(JObj(root))
+
+// Choose a reporter by format name. An unknown name falls back to the
+// text reporter, the safe legible default. The return type is the trait,
+// so the caller holds a `Reporter` and dispatches dynamically without
+// knowing which concrete renderer it got.
+pub fun pick_reporter(format_name: String) -> Reporter
+    if format_name == "csv"
+        return CsvReporter {}
+    if format_name == "json"
+        return JsonReporter {}
+    return TextReporter {}
+
+// Render a report through a chosen reporter. The dynamic-dispatch seam:
+// `r` is a `Reporter` trait object and `r.render` reaches the concrete
+// impl at runtime.
+pub fun render_report(r: Reporter, data: ReportData) -> String
+    return r.render(data)

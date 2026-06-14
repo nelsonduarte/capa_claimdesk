@@ -1,0 +1,139 @@
+// capa_claimdesk.store
+//
+// Phase 4 adapter: durable persistence of processed claims, their
+// decisions, and the audit ledger in a SQLite database, through a `Db`
+// capability attenuated to the output directory.
+//
+// CAPABILITY: Db, and only Db. This module holds no Fs / Net / Env /
+// Stdio; it turns processed-claim records into rows and a summary query
+// back into a typed result.
+//
+// ATTENUATION. main narrows the `Db` to the output directory with
+// `restrict_to` before any store call, mirroring how it narrows the
+// `Fs` (a built-in capability cannot be returned from a function, so the
+// attenuation is taken inline at the call site and the scoped handle is
+// passed in). The scoped `Db` admits the demo's `out/claimdesk.db` and
+// nothing outside `out/`; `db.allows` is false for any other path, which
+// the demo prints to make the boundary visible. Db attenuation is path-
+// boundary-aware (a sibling like `out_evil/` is rejected), and `ATTACH
+// DATABASE` is denied at the SQLite parser, so a scoped Db cannot open a
+// second file outside its prefix from inside SQL.
+//
+// INFORMATION FLOW. Only already-public, IBAN-minimised fields are
+// persisted: the keyed fingerprint and the masked suffix, exactly the
+// forms the ledger records, both produced by the program's existing
+// audited declassifies. The full IBAN is never written, so this adapter
+// adds ZERO declassification sites.
+//
+// DETERMINISM. The same input claims produce the same rows and the same
+// summary on both backends: the DB file is reset at the start of each
+// run (so re-runs do not accumulate), inserts are ordered, and `query`
+// returns capa's single cross-backend JSON wire shape (an array of rows
+// of stringified columns) which `parse_json` decodes identically on
+// Python and Wasm.
+
+import capa_claimdesk.money
+
+// A flattened, already-public record of one processed claim, ready to
+// persist. The IBAN-derived fields are the declassified forms; the raw
+// IBAN never appears here.
+pub type ClaimRecord {
+    claim_id: String,
+    employee_fp: String,        // keyed IBAN fingerprint (declassified)
+    payee_masked: String,       // masked IBAN suffix (declassified)
+    verdict: String,            // APPROVED | REJECTED
+    amount_cents: Int,          // settled amount (0 when rejected)
+    currency: String,
+    reason: String              // the decision's human-readable note
+}
+
+// One summary bucket from the rollup query: a verdict, how many claims
+// reached it, and the summed settled amount in cents.
+pub type VerdictSummary {
+    verdict: String,
+    count: Int,
+    total_cents: Int
+}
+
+// Single-quote escaping for a value spliced into a SQL string literal.
+// The records here are program-generated (ids, verdicts, fingerprints),
+// not free-form user input, but escaping keeps a description with an
+// apostrophe from breaking the statement and is the right habit.
+fun sql_quote(s: String) -> String
+    return "'" + s.replace("'", "''") + "'"
+
+// Create the schema. Idempotent (IF NOT EXISTS) and reset-safe: the demo
+// drops the tables first so a re-run starts from an empty, deterministic
+// database. `exec` runs the multi-statement script in one call.
+pub fun init_schema(db: Db, path: String) -> Result<Unit, IoError>
+    let ddl = "DROP TABLE IF EXISTS claims; DROP TABLE IF EXISTS decisions; DROP TABLE IF EXISTS ledger; CREATE TABLE claims (claim_id TEXT PRIMARY KEY, employee_fp TEXT, payee_masked TEXT, amount_cents INTEGER, currency TEXT); CREATE TABLE decisions (claim_id TEXT, verdict TEXT, amount_cents INTEGER, currency TEXT, reason TEXT); CREATE TABLE ledger (seq INTEGER, claim_id TEXT, line TEXT)"
+    return db.exec(path, ddl)
+
+// Persist one processed claim: its claim row and its decision row. Two
+// inserts in one script, with all interpolated values SQL-escaped.
+pub fun record_claim(db: Db, path: String, rec: ClaimRecord) -> Result<Unit, IoError>
+    let into_claims = "INSERT INTO claims VALUES (" + sql_quote(rec.claim_id) + ", " + sql_quote(rec.employee_fp) + ", " + sql_quote(rec.payee_masked) + ", " + "${rec.amount_cents}" + ", " + sql_quote(rec.currency) + ")"
+    let into_decisions = "INSERT INTO decisions VALUES (" + sql_quote(rec.claim_id) + ", " + sql_quote(rec.verdict) + ", " + "${rec.amount_cents}" + ", " + sql_quote(rec.currency) + ", " + sql_quote(rec.reason) + ")"
+    return db.exec(path, into_claims + "; " + into_decisions)
+
+// Persist one serialized ledger line under its sequence number, so the
+// tamper-evident chain is queryable alongside the claim records.
+pub fun record_ledger_line(db: Db, path: String, seq: Int, claim_id: String, line: String) -> Result<Unit, IoError>
+    let stmt = "INSERT INTO ledger VALUES (" + "${seq}" + ", " + sql_quote(claim_id) + ", " + sql_quote(line) + ")"
+    return db.exec(path, stmt)
+
+// Project one JSON row (a JArr of JStr columns) into a VerdictSummary.
+// The query selects verdict, COUNT(*), and SUM(amount_cents); every Db
+// column comes back stringified, so the numeric columns are re-parsed.
+fun row_to_summary(row: JsonValue) -> Option<VerdictSummary>
+    let cols = match row.as_array()
+        Some(xs) -> xs
+        None     -> return None
+    let verdict = match cols.get(0)
+        Some(j) -> match j.as_string()
+            Some(s) -> s
+            None    -> return None
+        None -> return None
+    let count = match cols.get(1)
+        Some(j) -> string_to_int(j)
+        None    -> return None
+    let total = match cols.get(2)
+        Some(j) -> string_to_int(j)
+        None    -> return None
+    return Some(VerdictSummary { verdict: verdict, count: count, total_cents: total })
+
+// A Db column arrives as a JSON string even when it holds a number, and
+// a SQL NULL arrives as the literal string "null"; both map to 0 here,
+// the additive identity that keeps an empty bucket harmless.
+fun string_to_int(j: JsonValue) -> Int
+    return match j.as_string()
+        Some(s) -> match parse_int(s)
+            Some(n) -> n
+            None    -> 0
+        None -> 0
+
+// Run the rollup query and decode it into typed summaries. Groups the
+// decisions by verdict, ordered by verdict so the output is stable on
+// both backends. `query` returns the cross-backend JSON wire shape,
+// parsed once with `parse_json`.
+pub fun summarize(db: Db, path: String) -> Result<List<VerdictSummary>, IoError>
+    let sql = "SELECT verdict, COUNT(*), SUM(amount_cents) FROM decisions GROUP BY verdict ORDER BY verdict"
+    let rows = db.query(path, sql)?
+    let parsed = match parse_json(rows)
+        Ok(j)  -> j
+        Err(_) -> return Ok([])
+    let arr = match parsed.as_array()
+        Some(xs) -> xs
+        None     -> return Ok([])
+    var out: List<VerdictSummary> = []
+    for row in arr
+        match row_to_summary(row)
+            Some(s) -> out.push(s)
+            None    -> ()
+    return Ok(out)
+
+// A one-line rendering of a verdict bucket, for the report and the
+// console. Pure formatting over public data.
+pub fun summary_line(s: VerdictSummary) -> String
+    let total = format(money(s.total_cents, EUR))
+    return "${s.verdict}: ${s.count} claim(s), ${total} settled"
