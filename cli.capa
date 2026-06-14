@@ -1,0 +1,86 @@
+// capa_claimdesk.cli
+//
+// Phase 5: the command-line front end, built on the capa_cli library
+// (ArgSchema / parse / format_help). Pure: it turns an argv list into a
+// typed `RunConfig` or a help/error outcome. No capability flows through
+// this module; main holds the Stdio that prints help, and the Env that
+// supplies argv.
+//
+// The schema:
+//   --input <csv>        path to the claim batch CSV (default data/claims.csv)
+//   --reporter <name>    text | csv | json (default text on the console)
+//   --live               make the real Net/Proc calls (non-deterministic;
+//                        the default, deterministic demo never sets this)
+//   --help / -h          print usage and exit
+//
+// DETERMINISM. The default demo passes a fixed argv (no --live), so the
+// parsed config is constant and the compared flow stays byte-identical on
+// both backends. --live only toggles the fx/scan adapters onto their real
+// capability calls, which are documented as outside the compared flow.
+
+import capa_cli.parser
+
+// The typed result of parsing claimdesk's command line. A plain data
+// record consumed by main; carries no capability.
+pub type RunConfig {
+    input_path: String,
+    reporter: String,
+    live: Bool
+}
+
+// Build claimdesk's argument schema. One source of truth for both parse
+// and the --help text.
+pub fun build_schema() -> ArgSchema
+    var flags: List<Flag> = []
+    flags.push(Flag { long: "live", short: "", help: "make the real Net/Proc calls (non-deterministic)" })
+
+    var options: List<Opt> = []
+    options.push(Opt { long: "input", short: "i", help: "claim batch CSV path", required: false })
+    options.push(Opt { long: "reporter", short: "r", help: "report format: text | csv | json", required: false })
+
+    var positionals: List<Positional> = []
+
+    return ArgSchema {
+        program: "claimdesk",
+        summary: "process a batch of expense claims through the approval pipeline",
+        positionals: positionals,
+        flags: flags,
+        options: options
+    }
+
+// The outcome of parsing: a ready RunConfig, a request to show help, or a
+// parse error to report. Keeps main's control flow flat.
+pub type CliOutcome =
+    Run(RunConfig)
+    ShowHelp
+    ArgsError(String)
+
+// Project a successfully-parsed ParsedArgs into a RunConfig, applying the
+// defaults that keep the demo deterministic when an option is omitted.
+fun config_from_parsed(parsed: ParsedArgs) -> RunConfig
+    let input = match parsed.options.get("input")
+        Some(p) -> p
+        None    -> "data/claims.csv"
+    let reporter = match parsed.options.get("reporter")
+        Some(r) -> r
+        None    -> "text"
+    let live = match parsed.flags.get("live")
+        Some(b) -> b
+        None    -> false
+    return RunConfig { input_path: input, reporter: reporter, live: live }
+
+// Parse an argv list (without argv[0]) into a CliOutcome. Wraps capa_cli's
+// ArgError into claimdesk's flat outcome so main matches one sum type.
+pub fun parse_args(args: List<String>) -> CliOutcome
+    let schema = build_schema()
+    return match parse(schema, args)
+        Ok(parsed)         -> Run(config_from_parsed(parsed))
+        Err(HelpRequested) -> ShowHelp
+        Err(Missing(name)) -> ArgsError("missing required argument '${name}'")
+        Err(Unknown(arg))  -> ArgsError("unrecognised argument '${arg}'")
+        Err(NeedsValue(n)) -> ArgsError("option '${n}' needs a value")
+
+// The full --help text, for main to print on ShowHelp. Delegates to
+// capa_cli's formatter over claimdesk's schema.
+pub fun help_text() -> String
+    return format_help(build_schema())
