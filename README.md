@@ -232,6 +232,81 @@ fingerprint, never the account, and a chain MAC over the previous line:
 ...
 ```
 
+## Tests and proofs
+
+The suite has two halves: positive tests that pin the business
+behaviour, and negative cases that make the security guarantees
+**executable** rather than prose.
+
+### Positive tests (`capa test --both`)
+
+`tests/test_*.capa` are ordinary Capa programs built on the
+[`capa_test`](https://github.com/nelsonduarte/capa_test)
+dev-dependency (a `Tester` with `check` / `eq_*` / `finish`
+assertions). They cover the pure core, which is deterministic and so
+byte-identical on both backends:
+
+| Suite                       | Covers                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `test_money.capa`           | cent arithmetic, the currency-mismatch `Result`, list `sum` (identity + abort), `compare`, formatting of positive / negative / zero / sub-euro amounts. |
+| `test_rules.capa`           | every policy rule across `Pass` / `Warn` / `Fail`, with the exact reason text.       |
+| `test_engine.capa`          | decision aggregation: all-pass `Approved`, one-fail `Rejected`, warn-only `NeedsInfo`, fail-outranks-warn, joined reasons. |
+| `test_mask.capa`            | IBAN suffix masking and the keyed HMAC fingerprint, pinned to a known cross-backend vector. |
+| `test_ledger.capa`          | the HMAC chain, a known chain-MAC vector, `verify_chain` accepting an intact chain and **rejecting** any tampered body or MAC, the constant-time comparator. |
+| `test_claim_lifecycle.capa` | the happy typestate path `Draft -> ... -> Settled` (spending a one-shot authorization) and the rejection path. |
+
+```sh
+capa test --both        # both backends + a byte-for-byte stdout diff
+```
+
+`capa test` discovers `tests/test_*.capa` under the project root and
+runs each as a fresh `capa --run`; it prepends the project root and its
+parent to `CAPA_PATH` itself, so the `capa_claimdesk.*` imports resolve
+with no environment setup. `--both` additionally requires that the two
+backends print identical stdout.
+
+### Negative cases: the guarantees, made executable
+
+The README claims the typestate protocol, linearity, information flow,
+and constant-time discipline are enforced *by the compiler*. The
+programs under [`negative/`](negative/) prove it: each one deliberately
+violates exactly one guarantee and **must not compile**.
+
+| Case                            | Guarantee forced                                          | Rejected because                                  |
+| ------------------------------- | --------------------------------------------------------- | ------------------------------------------------- |
+| `typestate_skip_state.capa`     | typestate protocol (no skipping states)                   | `approve` expects `Claim[UnderReview]`, got `Claim[Draft]` |
+| `typestate_use_after.capa`      | linearity of the claim value                              | the claim was consumed earlier and cannot be reused |
+| `linear_double_spend.capa`      | a payment authorization is one-shot                       | the authorization was consumed earlier (cannot pay twice) |
+| `linear_drop.capa`              | a payment authorization cannot be silently dropped        | the authorization is dropped without being consumed |
+| `ifc_leak_field.capa`           | confidentiality of the `@secret` IBAN                     | a `@secret` value reaches a public sink (no declassify) |
+| `ifc_leak_destructure.capa`     | destructuring does not launder a secret label             | the destructured `@secret` IBAN reaches a public sink |
+| `ct_secret_branch.capa`         | constant-time discipline (CWE-208)                        | a `@constant_time` function branches on `@secret` data |
+
+The runner compiles each case and asserts a **non-zero** exit *and*
+that the rejection names the expected reason. A case that compiled
+would be a soundness hole and the runner fails loudly:
+
+```sh
+bash negative/run_negative.sh
+```
+
+```
+ok   typestate_skip_state.capa  (rejected: "expects Claim[UnderReview], got Claim[Draft]")
+ok   typestate_use_after.capa  (rejected: "consumed earlier and cannot be used again")
+ok   linear_double_spend.capa  (rejected: "consumed earlier and cannot be used again")
+ok   linear_drop.capa  (rejected: "dropped without being consumed")
+ok   ifc_leak_field.capa  (rejected: "a @secret value reaches Stdio.println")
+ok   ifc_leak_destructure.capa  (rejected: "a @secret value reaches Stdio.println")
+ok   ct_secret_branch.capa  (rejected: "constant-time violation")
+------------------------------------------------------------
+negative cases: 7 rejected as expected, 0 unexpected
+PASSED: every guarantee is enforced by the compiler.
+```
+
+The IFC cases use `@strict_ifc()` so a leak is a hard error rather than
+the default warning; that is the only difference from the production
+code, which routes every disclosure through an audited `declassify`.
+
 ## Modules
 
 | Module         | What it holds                                                        |
@@ -349,6 +424,11 @@ settle(c2, a)                   // a was already consumed: cannot pay twice
 let a = authorize(...)          // never consumed: a payout was authorized
                                 // and then silently dropped -> compile error
 ```
+
+These are not just claims in prose. Each one is a real program under
+[`negative/`](negative/) that the test runner compiles and asserts is
+**rejected** by `capa --check`, for the expected reason. See
+[Tests and proofs](#tests-and-proofs).
 
 ## Money as integer cents
 
