@@ -1,0 +1,238 @@
+// capa_claimdesk.rules
+//
+// The expense-policy rule set. Each rule is a small, self-contained
+// predicate over the data of a claim (its lines, total, and currency)
+// that yields a `RuleOutcome`: a hard `Fail` (the claim violates
+// policy), a soft `Warn` (the claim is acceptable but a human should
+// look), or a clean `Pass`.
+//
+// Behavioural polymorphism, not data polymorphism: every rule is a
+// distinct concrete type that `impl`s the one `Rule` trait, and the
+// engine (engine.capa) holds them as a `List<Rule>` and dispatches
+// dynamically over the mix. Capa has no `<T: Trait>` bounds; the
+// trait *is* the type, so a heterogeneous list of policies is just a
+// `List<Rule>`.
+//
+// The configurable rules (the limits) take their thresholds as fields
+// at construction, so a deployment tunes policy by building a
+// different rule list, never by editing this module.
+//
+// Zero capabilities. Every rule is a pure total function of the claim
+// data: no Fs, Net, Db, Clock, Random, or Stdio is reachable from any
+// rule body. That purity is the showcase point, and `capa --manifest`
+// proves it mechanically. Identical under `--run` and `--wasm --run`.
+
+import capa_claimdesk.money
+import capa_claimdesk.domain
+
+// =========================================================
+// RuleOutcome
+// =========================================================
+//
+// The verdict of evaluating one rule. `Warn` and `Fail` carry a
+// human-readable reason so a report (and the engine's aggregate
+// decision) can quote exactly what tripped.
+
+pub type RuleOutcome =
+    Pass
+    Warn(String)
+    Fail(String)
+
+/// A one-line rendering of an outcome, for reports.
+pub fun outcome_line(o: RuleOutcome) -> String
+    return match o
+        Pass        -> "pass"
+        Warn(why)   -> "warn: ${why}"
+        Fail(why)   -> "fail: ${why}"
+
+// =========================================================
+// The Rule trait
+// =========================================================
+//
+// `name` identifies the rule in a report; `evaluate` runs it against a
+// claim's lines, total, and currency. The engine passes the
+// already-computed total so a rule never re-sums (and so a
+// currency-inconsistent claim, which has no well-defined total, is
+// caught by the currency rule before any total-based rule trusts it).
+
+pub trait Rule
+    fun name(self) -> String
+    fun evaluate(self, lines: List<ExpenseLine>, total: Money) -> RuleOutcome
+
+// =========================================================
+// CurrencyConsistencyRule
+// =========================================================
+//
+// Every line must be in the claim's currency. This is the one rule the
+// engine relies on running first: a mixed-currency claim has no
+// meaningful `total`, so the engine seeds the total in the expected
+// currency and this rule is what catches a stray line. Exercises a
+// nested match (a `Some` carrying the first offending currency inside
+// the loop's running state) and a guard-free variant match over
+// `Currency`.
+
+pub type CurrencyConsistencyRule {
+    expected: Currency
+}
+
+impl Rule for CurrencyConsistencyRule
+    fun name(self) -> String
+        return "currency-consistency"
+
+    fun evaluate(self, lines: List<ExpenseLine>, total: Money) -> RuleOutcome
+        var offending: Option<Currency> = None
+        for line in lines
+            match offending
+                Some(_) -> ()
+                None ->
+                    if not same_currency_code(line.amount.currency, self.expected)
+                        offending = Some(line.amount.currency)
+        return match offending
+            None      -> Pass
+            Some(cur) ->
+                Fail("line in ${currency_code(cur)}, claim is ${currency_code(self.expected)}")
+
+// =========================================================
+// TotalLimitRule
+// =========================================================
+//
+// The whole claim may not exceed `limit`. A claim within the limit but
+// within `warn_margin` cents of it passes with a `Warn` so a reviewer
+// notices a claim that is close to the cap. Exercises a guarded match
+// over the integer comparison: the same `cents` value routes to Fail,
+// Warn, or Pass by guard.
+
+pub type TotalLimitRule {
+    limit: Money,
+    warn_margin: Int
+}
+
+impl Rule for TotalLimitRule
+    fun name(self) -> String
+        return "total-limit"
+
+    fun evaluate(self, lines: List<ExpenseLine>, total: Money) -> RuleOutcome
+        let over = total.cents - self.limit.cents
+        return match over
+            n if n > 0 ->
+                Fail("total ${format(total)} exceeds limit ${format(self.limit)}")
+            n if 0 - n <= self.warn_margin ->
+                Warn("total ${format(total)} is within ${self.warn_margin} cents of the limit")
+            _ -> Pass
+
+// =========================================================
+// CategoryLimitRule
+// =========================================================
+//
+// The summed amount of all lines in one category may not exceed
+// `limit`. Builds the per-category subtotal by folding the lines,
+// counting only lines whose category matches, then matches the
+// subtotal against the limit with a guard. Exercises a nested decision:
+// a category match (a variant comparison) inside the fold, then a
+// guarded match on the resulting subtotal.
+
+pub type CategoryLimitRule {
+    category: Category,
+    limit: Money
+}
+
+impl Rule for CategoryLimitRule
+    fun name(self) -> String
+        return "category-limit:${category_name(self.category)}"
+
+    fun evaluate(self, lines: List<ExpenseLine>, total: Money) -> RuleOutcome
+        var subtotal = 0
+        for line in lines
+            if same_category(line.category, self.category)
+                subtotal = subtotal + line.amount.cents
+        let limited = money(subtotal, self.limit.currency)
+        return match subtotal - self.limit.cents
+            n if n > 0 ->
+                Fail("${category_name(self.category)} subtotal ${format(limited)} exceeds ${format(self.limit)}")
+            _ -> Pass
+
+// =========================================================
+// ReceiptRequiredRule
+// =========================================================
+//
+// Any single line at or above `threshold` is assumed to need a receipt.
+// Phase 1 carries no receipt flag on a line, so this rule reports a
+// `Warn` (not a `Fail`) listing the high-value lines that a reviewer
+// must check a receipt for; it never blocks payment on its own.
+// Exercises a nested match: a guard on the line amount inside the loop,
+// accumulating the count, then a match on whether any line tripped.
+
+pub type ReceiptRequiredRule {
+    threshold: Money
+}
+
+impl Rule for ReceiptRequiredRule
+    fun name(self) -> String
+        return "receipt-required"
+
+    fun evaluate(self, lines: List<ExpenseLine>, total: Money) -> RuleOutcome
+        var flagged = 0
+        for line in lines
+            if line.amount.cents >= self.threshold.cents
+                flagged = flagged + 1
+        return match flagged
+            0 -> Pass
+            1 -> Warn("1 line at or above ${format(self.threshold)} needs a receipt")
+            n -> Warn("${n} lines at or above ${format(self.threshold)} need receipts")
+
+// =========================================================
+// DuplicateLineRule
+// =========================================================
+//
+// Two lines that share a category and an exact amount are almost always
+// a double entry. Reports a `Fail` naming the first duplicated pair.
+// Exercises an inner nested loop with a guarded structural comparison
+// (same category and same cents) and an early-stop match on the first
+// duplicate found.
+
+pub type DuplicateLineRule {
+}
+
+impl Rule for DuplicateLineRule
+    fun name(self) -> String
+        return "duplicate-line"
+
+    fun evaluate(self, lines: List<ExpenseLine>, total: Money) -> RuleOutcome
+        var dup: Option<String> = None
+        let count = lines.length()
+        var i = 0
+        for a in lines
+            var j = 0
+            for b in lines
+                match dup
+                    Some(_) -> ()
+                    None ->
+                        if j > i and same_line(a, b)
+                            dup = Some(a.description)
+                j = j + 1
+            i = i + 1
+        return match dup
+            None       -> Pass
+            Some(desc) -> Fail("duplicate line: \"${desc}\" appears twice")
+
+// =========================================================
+// Internal comparison helpers (pure, total)
+// =========================================================
+
+fun same_currency_code(a: Currency, b: Currency) -> Bool
+    return match a
+        EUR -> is_code(b, "EUR")
+        USD -> is_code(b, "USD")
+        GBP -> is_code(b, "GBP")
+
+fun is_code(c: Currency, code: String) -> Bool
+    return currency_code(c) == code
+
+fun same_category(a: Category, b: Category) -> Bool
+    return category_name(a) == category_name(b)
+
+fun same_line(a: ExpenseLine, b: ExpenseLine) -> Bool
+    let same_cat = same_category(a.category, b.category)
+    let same_cur = same_currency_code(a.amount.currency, b.amount.currency)
+    let same_amt = a.amount.cents == b.amount.cents
+    return same_cat and same_cur and same_amt

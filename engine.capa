@@ -1,0 +1,170 @@
+// capa_claimdesk.engine
+//
+// The decision engine. It takes a claim's data and a policy as a
+// `List<Rule>` (heterogeneous: each element a different concrete rule
+// type), dispatches `evaluate` dynamically over every rule, collects
+// the `RuleOutcome`s, and folds them into a single `Decision`:
+//
+//     any Fail  -> Rejected  (with the failing reasons)
+//     any Warn  -> NeedsInfo (with the warnings, nothing failed)
+//     otherwise -> Approved  (with the validated total)
+//
+// This is the headline trait-dispatch exercise: the engine knows
+// nothing about any concrete rule, only the `Rule` trait, and the same
+// `r.evaluate(...)` call reaches the right impl for each element of the
+// mixed list.
+//
+// Generics appear in two places that earn their keep rather than being
+// bolted on: `Tally<T>` is a generic running aggregate (the engine
+// folds outcomes into a `Tally<String>` of accumulated reasons), and
+// `Evaluated<T>` pairs any labelled item with the outcome it produced,
+// so a caller can build a per-rule report list of `Evaluated<String>`
+// without the engine hard-coding the label type.
+//
+// Zero capabilities: the engine is a pure function of its inputs. It
+// neither prints nor reads anything; the caller (main.capa) renders the
+// report and drives the typestate transition from the returned
+// `Decision`. `capa --manifest` proves the engine touches no Fs / Net /
+// Db / Clock / Random / Stdio. Identical under `--run` and `--wasm --run`.
+//
+// BACKEND NOTE (compiler bug, worked around here): a generic function
+// with NO value parameters, whose type argument is fixed only by the
+// binding annotation at the call site (`var t: Tally<String> =
+// empty_tally()`), type-checks and runs on `--run` but fails to emit a
+// monomorphised clone on `--wasm --run` ("unknown func: failed to find
+// name `$empty_tally`"). The seed list in `empty_tally` is the
+// work-around: it carries `T` through a real argument so both backends
+// infer it. See the repro and write-up in the Phase 2 notes.
+
+import capa_claimdesk.money
+import capa_claimdesk.domain
+import capa_claimdesk.rules
+
+// =========================================================
+// Decision
+// =========================================================
+//
+// The engine's verdict on a whole claim. `Approved` carries the
+// validated total (the amount a payment authorization will be minted
+// for); `Rejected` and `NeedsInfo` carry a single assembled reason
+// string so the caller can quote it without re-deriving anything.
+
+pub type Decision =
+    Approved(Money)
+    Rejected(String)
+    NeedsInfo(String)
+
+/// A one-line rendering of a decision, for reports.
+pub fun decision_line(d: Decision) -> String
+    return match d
+        Approved(total) -> "APPROVED for ${format(total)}"
+        Rejected(why)   -> "REJECTED: ${why}"
+        NeedsInfo(why)  -> "NEEDS INFO: ${why}"
+
+// =========================================================
+// Evaluated<T>: a labelled item paired with its outcome
+// =========================================================
+//
+// Generic over the label type so the engine can hand back a per-rule
+// report (`Evaluated<String>`, the label being the rule name) without
+// committing to a label representation. A different caller could pair
+// outcomes with rule objects, ids, or indices using the same type.
+
+pub type Evaluated<T> {
+    label: T,
+    outcome: RuleOutcome
+}
+
+/// Pair a label with an outcome.
+pub fun evaluated<T>(label: T, outcome: RuleOutcome) -> Evaluated<T>
+    return Evaluated { label: label, outcome: outcome }
+
+// =========================================================
+// Tally<T>: a generic running aggregate
+// =========================================================
+//
+// A small fold accumulator: how many of each outcome kind have been
+// seen, plus a list of collected "reasons" of the parametric type `T`.
+// The engine folds outcomes into a `Tally<String>` (reasons being the
+// human messages), but the container itself is agnostic to what a
+// reason is.
+
+pub type Tally<T> {
+    passes: Int,
+    fails: List<T>,
+    warns: List<T>
+}
+
+/// An empty tally, the fold's seed. `seed` is an empty `List<T>` whose
+/// only job is to fix the reason type `T` at the call site: a generic
+/// function with no value parameter cannot have its type argument
+/// inferred on the Wasm backend (see the BACKEND NOTE in this module),
+/// so the seed list carries it explicitly.
+pub fun empty_tally<T>(seed: List<T>) -> Tally<T>
+    let no_warns: List<T> = []
+    return Tally { passes: 0, fails: seed, warns: no_warns }
+
+// =========================================================
+// Aggregation
+// =========================================================
+
+/// Fold one outcome (already reduced to its reason text) into a tally.
+fun tally_outcome(acc: Tally<String>, o: RuleOutcome) -> Tally<String>
+    match o
+        Pass      -> acc.passes = acc.passes + 1
+        Warn(why) -> acc.warns.push(why)
+        Fail(why) -> acc.fails.push(why)
+    return acc
+
+/// Join a list of reasons into one "; "-separated line. Pure string
+/// folding, identical on both backends.
+fun join_reasons(reasons: List<String>) -> String
+    var out = ""
+    var first = true
+    for r in reasons
+        if first
+            out = r
+            first = false
+        else
+            out = "${out}; ${r}"
+    return out
+
+/// Reduce a tally to a `Decision`: any fail rejects, otherwise any warn
+/// needs info, otherwise approve for the validated total.
+fun decide_from_tally(t: Tally<String>, total: Money) -> Decision
+    if t.fails.length() > 0
+        return Rejected(join_reasons(t.fails))
+    if t.warns.length() > 0
+        return NeedsInfo(join_reasons(t.warns))
+    return Approved(total)
+
+// =========================================================
+// The engine entry point
+// =========================================================
+//
+// Evaluate every rule against the claim data (dynamic dispatch over the
+// mixed `List<Rule>`), build the per-rule report, fold the outcomes,
+// and return both the report (for display) and the aggregated
+// `Decision` (which drives the typestate transition in main.capa).
+
+pub type Evaluation {
+    report: List<Evaluated<String>>,
+    decision: Decision
+}
+
+/// Run a policy over a claim's lines. `total` is the claim's validated
+/// total in its own currency; the currency-consistency rule is expected
+/// to be in `rules` so a mixed-currency claim is caught explicitly
+/// rather than trusting a total that was seeded in the wrong currency.
+pub fun evaluate_claim(rules: List<Rule>, lines: List<ExpenseLine>, total: Money) -> Evaluation
+    var report: List<Evaluated<String>> = []
+    let reasons_seed: List<String> = []
+    var tally: Tally<String> = empty_tally(reasons_seed)
+    for r in rules
+        // Dynamic dispatch: `r` is a `Rule`, the call reaches the
+        // concrete impl for whatever rule type this element is.
+        let outcome = r.evaluate(lines, total)
+        report.push(evaluated(r.name(), outcome))
+        tally = tally_outcome(tally, outcome)
+    let decision = decide_from_tally(tally, total)
+    return Evaluation { report: report, decision: decision }
