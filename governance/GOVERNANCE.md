@@ -80,7 +80,7 @@ committed-snapshot pattern as `capa_paymentguard`.
 
 Read straight off `manifest.json` `summary`:
 
-- **205 functions** (the program plus the verified dependencies it
+- **213 functions** (the program plus the verified dependencies it
   pulls in), **0 crossing `Unsafe`** (`functions_crossing_unsafe: 0`):
   no FFI / raw-pointer escape hatch anywhere in the program or its
   dependencies.
@@ -89,7 +89,7 @@ Read straight off `manifest.json` `summary`:
 - **3 declassification sites** (`declassification_sites: 3`): every
   secret-to-public disclosure in the program, each with a stated reason
   (see the IFC row below).
-- **26 functions declare a capability**; the remaining 179 declare
+- **26 functions declare a capability**; the remaining 187 declare
   none. The pure policy / domain core declares **zero** capabilities.
 
 ## The guarantees, mapped to evidence

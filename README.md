@@ -71,7 +71,7 @@ is capability-free.
 >   through a `Reporter` trait with Text / Csv / Json implementations
 >   (dynamic dispatch). The two example claims now come from a CSV
 >   fixture. See [Phase 4](#phase-4-the-io-adapter-layer).
-> - **Phase 5 (this commit)** completes the program **end-to-end** and
+> - **Phase 5** completes the program **end-to-end** and
 >   exercises **all eight** built-in capabilities, a **user-defined
 >   capability**, and three more seed libraries. `main` now acquires
 >   `Stdio`, `Fs`, `Db`, `Env`, `Net`, `Proc`, `Clock`, and `Random` and
@@ -87,7 +87,9 @@ is capability-free.
 >   flag switches `fx`/`scan` onto their real network/subprocess calls.
 >   See [Phase 5](#phase-5-the-complete-pipeline).
 >
-> A later phase adds a test suite and the governance / SBOM pack.
+> Phase 6 then adds the test suite (a positive `capa_test` suite for the
+> pure core plus the `negative/` proofs), and Phase 7 the governance /
+> SBOM pack that the program self-audits.
 
 ## Running the demo
 
@@ -505,16 +507,24 @@ if this disclosure is intended.
 `run_claim` is marked `@strict_ifc()`, so these are hard errors, not
 warnings.
 
-> **A note on field-level `@secret` (compiler limitation found while
-> building this).** Reading a `@secret` *struct field* (`employee.iban`)
-> currently drops the field's secret label, both for a direct sink and
-> across a function return. The IBAN is therefore re-bound into an
-> explicitly `@secret` local (`let iban: @secret String = employee.iban`)
-> at the top of `run_claim` before anything is derived from it; that
-> annotation is what re-establishes the label and makes the sinks
-> guarded and the declassifies load-bearing. The seam is one line and is
-> commented in `main.capa`. This is reported upstream as a compiler bug;
-> the workaround keeps the showcased property real and enforced.
+> **A note on field-level `@secret` (a compiler bug this showcase found,
+> now fixed).** While building this, reading a `@secret` *struct field*
+> (`employee.iban`) dropped the field's secret label, both for a direct
+> sink and across a function return, and the same for a `let`
+> destructuring of the field. That would have let the raw IBAN reach a
+> sink unguarded, so an early version re-bound it into an explicitly
+> `@secret` local to re-establish the label. The hole was reported
+> upstream and **fixed in Capa v1.2.0** (commits `a9b4905` and
+> `d2e5db5`): a `@secret` field read and destructure now carry the label.
+> The workaround was therefore removed: `run_claim` derives the masked
+> suffix and the fingerprint straight from `employee.iban`, the label
+> rides through `mask.*`, and the two `declassify` calls are what let the
+> public forms reach a sink. The `negative/ifc_leak_field.capa` and
+> `negative/ifc_leak_destructure.capa` cases pin both halves of the fix:
+> each sends the field (or its destructured binding) to a public sink
+> with no declassify, and the compiler rejects them. This is the
+> dogfooding loop the showcase is meant to exercise: build a real
+> program, find a soundness gap, fix the compiler, keep the guarantee.
 
 ### Capabilities stay least-privilege
 
@@ -546,8 +556,9 @@ both backends, generated SQLite database and CSV report included.
 
 ### One capability per adapter, each attenuated
 
-`capa --manifest main.capa` (155 functions in the linked program)
-reports each adapter's authority. The split is exact:
+`capa --manifest main.capa` (155 functions in the linked program at this
+phase; the finished Phase 5 program links 213) reports each adapter's
+authority. The split is exact:
 
 | Adapter            | Capability | Attenuation                                   |
 | ------------------ | ---------- | --------------------------------------------- |
@@ -641,7 +652,7 @@ cross-backend.
 
 ### All eight capabilities, each attenuated at the point of use
 
-`capa --manifest main.capa` (205 functions in the linked program) reports
+`capa --manifest main.capa` (213 functions in the linked program) reports
 the split exactly:
 
 | Capability | Held by                        | Attenuation                                   |
@@ -663,7 +674,7 @@ the narrowing is monotonic and fail-closed. The pure core is unchanged:
 ```json
 {
   "summary": {
-    "total_functions": 205,
+    "total_functions": 213,
     "functions_crossing_unsafe": 0,
     "declassification_sites": 3
   },
@@ -803,7 +814,9 @@ Everything lives under [`governance/`](governance/):
 [`governance/audit.capa`](governance/audit.capa) closes the loop. It is a
 standalone Capa program that reads the committed CycloneDX SBOM back in
 with the [`capa_sbom`](https://github.com/nelsonduarte/capa_sbom) library
-(the eighth seed library this showcase exercises) and checks a governance
+(the seventh seed library this showcase exercises: `capa_hash`,
+`capa_csv`, `capa_cli`, `capa_log`, `capa_datetime`, `capa_test`, and
+`capa_sbom`) and checks a governance
 policy against it, printing PASS/FAIL:
 
 - **Policy 1**: the pure core (`rules` / `engine` / `mask` / `report` /

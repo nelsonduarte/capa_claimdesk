@@ -15,14 +15,11 @@
 #   tamper-evident audit ledger and the @secret IBAN handling) is the
 #   first phase to import an external library, so capa_hash is added
 #   there. Phase 4 (the IO adapter layer) imports capa_csv for batch
-#   claim import and report export, so it is added here. The libraries
-#   the remaining phases will pull in, with their current published
-#   tags, are:
-#
-#     capa_sbom      v0.1.0   self-audit of the engine's own capabilities
-#
-#   All are cross-backend and pinned with the publisher verify_key
-#   6C1D222D491FB88031E041A536CFB426101AA24B when added.
+#   claim import and report export, so it is added here. Each later
+#   phase adds its dependencies in the same way (Phase 5 the CLI / log /
+#   datetime trio, Phase 7 capa_sbom for the self-audit), all
+#   cross-backend and pinned with the publisher verify_key
+#   6C1D222D491FB88031E041A536CFB426101AA24B.
 #
 # Phase 5 (the full wiring + CLI + the remaining real capabilities)
 # pulls in three more, all cross-backend and zero- or Stdio-only
@@ -96,7 +93,7 @@ verify_key = "6C1D222D491FB88031E041A536CFB426101AA24B"
 # (the pure core declares no capabilities; only authorized functions
 # reach Net). It is NOT reachable from main.capa, so it does not appear
 # in the program's own manifest/SBOM and does not widen its capability
-# surface; it is the eighth seed library this showcase exercises.
+# surface; it is the seventh seed library this showcase exercises.
 [dependencies.capa_sbom]
 git = "https://github.com/nelsonduarte/capa_sbom"
 tag = "v0.1.0"
