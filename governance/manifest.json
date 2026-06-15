@@ -18035,9 +18035,9 @@
         {
           "kind": "fn",
           "callee": "declassify",
-          "pos": "230:18",
+          "pos": "231:18",
           "args": [
-            "mask_iban(iban)",
+            "mask_iban(employee.iban)",
             "\"GDPR data minimisation: a ledger/report shows only the last four IBAN charac..."
           ],
           "args_flow": [
@@ -18048,9 +18048,9 @@
         {
           "kind": "fn",
           "callee": "mask_iban",
-          "pos": "231:9",
+          "pos": "232:9",
           "args": [
-            "iban"
+            "employee.iban"
           ],
           "args_flow": [
             null
@@ -18059,9 +18059,9 @@
         {
           "kind": "fn",
           "callee": "declassify",
-          "pos": "234:14",
+          "pos": "235:14",
           "args": [
-            "iban_fingerprint(iban, fingerprint_key())",
+            "iban_fingerprint(employee.iban, fingerprint_key())",
             "\"GDPR: a keyed one-way IBAN fingerprint correlates an employee across ledger ..."
           ],
           "args_flow": [
@@ -18072,9 +18072,9 @@
         {
           "kind": "fn",
           "callee": "iban_fingerprint",
-          "pos": "235:9",
+          "pos": "236:9",
           "args": [
-            "iban",
+            "employee.iban",
             "fingerprint_key()"
           ],
           "args_flow": [
@@ -18085,14 +18085,14 @@
         {
           "kind": "fn",
           "callee": "fingerprint_key",
-          "pos": "235:37",
+          "pos": "236:46",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "events.push",
-          "pos": "241:9",
+          "pos": "242:9",
           "args": [
             "e"
           ],
@@ -18103,7 +18103,7 @@
         {
           "kind": "fn",
           "callee": "draft_claim",
-          "pos": "243:14",
+          "pos": "244:14",
           "args": [
             "id",
             "employee",
@@ -18120,7 +18120,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "244:5",
+          "pos": "245:5",
           "args": [
             "\"[Draft]       claim ${...} opened for ${...} (IBAN ${...}, submitted ${...})\""
           ],
@@ -18131,7 +18131,7 @@
         {
           "kind": "method",
           "callee": "log.info",
-          "pos": "245:5",
+          "pos": "246:5",
           "args": [
             "\"intake: claim ${...} opened for ${...}, txn ${...}\""
           ],
@@ -18142,7 +18142,7 @@
         {
           "kind": "fn",
           "callee": "lines_total",
-          "pos": "246:25",
+          "pos": "247:25",
           "args": [
             "c0.lines",
             "EUR"
@@ -18155,7 +18155,7 @@
         {
           "kind": "fn",
           "callee": "show_money",
-          "pos": "247:22",
+          "pos": "248:22",
           "args": [
             "total"
           ],
@@ -18166,7 +18166,7 @@
         {
           "kind": "fn",
           "callee": "money_error_message",
-          "pos": "248:22",
+          "pos": "249:22",
           "args": [
             "e"
           ],
@@ -18177,7 +18177,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "249:5",
+          "pos": "250:5",
           "args": [
             "\"              ${...} lines, requested total ${...}\""
           ],
@@ -18188,14 +18188,14 @@
         {
           "kind": "method",
           "callee": "c0.lines.length",
-          "pos": "249:36",
+          "pos": "250:36",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "events.push",
-          "pos": "250:5",
+          "pos": "251:5",
           "args": [
             "ledger_event(seq0, id, \"SUBMITTED\", employee.id, fp, masked, 0, \"\", \"${...} l..."
           ],
@@ -18206,7 +18206,7 @@
         {
           "kind": "fn",
           "callee": "ledger_event",
-          "pos": "250:17",
+          "pos": "251:17",
           "args": [
             "seq0",
             "id",
@@ -18233,14 +18233,14 @@
         {
           "kind": "method",
           "callee": "lines.length",
-          "pos": "250:88",
+          "pos": "251:88",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "submit",
-          "pos": "252:14",
+          "pos": "253:14",
           "args": [
             "c0",
             "20260614"
@@ -18253,7 +18253,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "253:5",
+          "pos": "254:5",
           "args": [
             "\"[Submitted]   submitted at tick ${...}\""
           ],
@@ -18264,7 +18264,7 @@
         {
           "kind": "fn",
           "callee": "start_review",
-          "pos": "255:14",
+          "pos": "256:14",
           "args": [
             "c1",
             "\"R-3001 (Bruno Antunes)\""
@@ -18277,7 +18277,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "256:5",
+          "pos": "257:5",
           "args": [
             "\"[UnderReview] picked up by ${...}\""
           ],
@@ -18288,7 +18288,7 @@
         {
           "kind": "method",
           "callee": "events.push",
-          "pos": "257:5",
+          "pos": "258:5",
           "args": [
             "ledger_event(seq0 + 1, id, \"UNDER_REVIEW\", \"R-3001 (Bruno Antunes)\", fp, mask..."
           ],
@@ -18299,7 +18299,7 @@
         {
           "kind": "fn",
           "callee": "ledger_event",
-          "pos": "257:17",
+          "pos": "258:17",
           "args": [
             "seq0 + 1",
             "id",
@@ -18326,7 +18326,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "259:5",
+          "pos": "260:5",
           "args": [
             "\"              evaluating policy:\""
           ],
@@ -18337,7 +18337,7 @@
         {
           "kind": "fn",
           "callee": "process",
-          "pos": "260:19",
+          "pos": "261:19",
           "args": [
             "c2",
             "policy",
@@ -18368,7 +18368,7 @@
         {
           "kind": "method",
           "callee": "events.push",
-          "pos": "262:9",
+          "pos": "263:9",
           "args": [
             "e"
           ],
@@ -18379,7 +18379,7 @@
         {
           "kind": "fn",
           "callee": "write_ledger",
-          "pos": "266:11",
+          "pos": "267:11",
           "args": [
             "out",
             "\"out/${...}\"",
@@ -18394,14 +18394,14 @@
         {
           "kind": "fn",
           "callee": "ledger_path",
-          "pos": "266:43",
+          "pos": "267:43",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "268:19",
+          "pos": "269:19",
           "args": [
             "\"failed to write ledger\""
           ],
@@ -18413,13 +18413,13 @@
       "declassifications": [
         {
           "reason": "GDPR data minimisation: a ledger/report shows only the last four IBAN characters, never the full account",
-          "value": "mask_iban(iban)",
-          "pos": "230:18"
+          "value": "mask_iban(employee.iban)",
+          "pos": "231:18"
         },
         {
           "reason": "GDPR: a keyed one-way IBAN fingerprint correlates an employee across ledger entries; it is recorded in the audit ledger, never the IBAN itself",
-          "value": "iban_fingerprint(iban, fingerprint_key())",
-          "pos": "234:14"
+          "value": "iban_fingerprint(employee.iban, fingerprint_key())",
+          "pos": "235:14"
         }
       ]
     },
@@ -18429,7 +18429,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "main.capa:291:1",
+      "pos": "main.capa:292:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -18471,7 +18471,7 @@
         {
           "kind": "method",
           "callee": "rng.int_range",
-          "pos": "292:13",
+          "pos": "293:13",
           "args": [
             "100000",
             "1000000"
@@ -18490,7 +18490,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "main.capa:295:1",
+      "pos": "main.capa:296:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -18588,14 +18588,14 @@
         {
           "kind": "method",
           "callee": "env.args",
-          "pos": "300:16",
+          "pos": "301:16",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "parse_args",
-          "pos": "301:19",
+          "pos": "302:19",
           "args": [
             "argv"
           ],
@@ -18606,7 +18606,7 @@
         {
           "kind": "method",
           "callee": "stdio.print",
-          "pos": "304:13",
+          "pos": "305:13",
           "args": [
             "help_text()"
           ],
@@ -18617,14 +18617,14 @@
         {
           "kind": "fn",
           "callee": "help_text",
-          "pos": "304:25",
+          "pos": "305:25",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "307:13",
+          "pos": "308:13",
           "args": [
             "\"claimdesk: ${...}\""
           ],
@@ -18635,7 +18635,7 @@
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "308:13",
+          "pos": "309:13",
           "args": [
             "\"try --help\""
           ],
@@ -18646,7 +18646,7 @@
         {
           "kind": "fn",
           "callee": "make_stdio_logger",
-          "pos": "315:18",
+          "pos": "316:18",
           "args": [
             "stdio",
             "INFO"
@@ -18659,7 +18659,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "317:5",
+          "pos": "318:5",
           "args": [
             "\"claimdesk Phase 5: full pipeline (8 capabilities, user-defined Notifier, CLI)\""
           ],
@@ -18670,7 +18670,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "318:5",
+          "pos": "319:5",
           "args": [
             "\"==============================================================================\""
           ],
@@ -18681,7 +18681,7 @@
         {
           "kind": "method",
           "callee": "logger.info",
-          "pos": "319:5",
+          "pos": "320:5",
           "args": [
             "\"claimdesk start: reporter=${...}, live=${...}, input=${...}\""
           ],
@@ -18692,7 +18692,7 @@
         {
           "kind": "fn",
           "callee": "live_label",
-          "pos": "319:68",
+          "pos": "320:68",
           "args": [
             "cfg.live"
           ],
@@ -18703,7 +18703,7 @@
         {
           "kind": "fn",
           "callee": "format_iso8601",
-          "pos": "322:25",
+          "pos": "323:25",
           "args": [
             "submission_epoch()"
           ],
@@ -18714,14 +18714,14 @@
         {
           "kind": "fn",
           "callee": "submission_epoch",
-          "pos": "322:40",
+          "pos": "323:40",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "format_iso8601",
-          "pos": "323:19",
+          "pos": "324:19",
           "args": [
             "submission_epoch() + sla_window_secs()"
           ],
@@ -18732,21 +18732,21 @@
         {
           "kind": "fn",
           "callee": "submission_epoch",
-          "pos": "323:34",
+          "pos": "324:34",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "sla_window_secs",
-          "pos": "323:55",
+          "pos": "324:55",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "324:5",
+          "pos": "325:5",
           "args": [
             "\"\""
           ],
@@ -18757,7 +18757,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "325:5",
+          "pos": "326:5",
           "args": [
             "\"[clock]       submission instant ${...}, SLA cutoff ${...}\""
           ],
@@ -18768,21 +18768,21 @@
         {
           "kind": "fn",
           "callee": "submission_epoch",
-          "pos": "334:18",
+          "pos": "335:18",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "sla_window_secs",
-          "pos": "334:39",
+          "pos": "335:39",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "clock.restrict_to_after",
-          "pos": "335:21",
+          "pos": "336:21",
           "args": [
             "cutoff"
           ],
@@ -18793,7 +18793,7 @@
         {
           "kind": "method",
           "callee": "sla_clock.sleep",
-          "pos": "336:5",
+          "pos": "337:5",
           "args": [
             "0.0"
           ],
@@ -18804,7 +18804,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "337:5",
+          "pos": "338:5",
           "args": [
             "\"              Clock attenuated to not-before the SLA cutoff; sleep gated unt..."
           ],
@@ -18815,7 +18815,7 @@
         {
           "kind": "fn",
           "callee": "load_policy_config",
-          "pos": "340:22",
+          "pos": "341:22",
           "args": [
             "env"
           ],
@@ -18826,7 +18826,7 @@
         {
           "kind": "method",
           "callee": "env.restrict_to_keys",
-          "pos": "341:22",
+          "pos": "342:22",
           "args": [
             "[\"CLAIMDESK_TOTAL_LIMIT\", \"CLAIMDESK_MEALS_LIMIT\", \"CLAIMDESK_RECEIPT_THRESHO..."
           ],
@@ -18837,7 +18837,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "345:5",
+          "pos": "346:5",
           "args": [
             "\"\""
           ],
@@ -18848,7 +18848,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "346:5",
+          "pos": "347:5",
           "args": [
             "\"[config]      policy from Env: ${...}\""
           ],
@@ -18859,7 +18859,7 @@
         {
           "kind": "fn",
           "callee": "describe_config",
-          "pos": "346:53",
+          "pos": "347:53",
           "args": [
             "policy_cfg"
           ],
@@ -18870,7 +18870,7 @@
         {
           "kind": "method",
           "callee": "scoped_env.allows",
-          "pos": "347:22",
+          "pos": "348:22",
           "args": [
             "\"HOME\""
           ],
@@ -18881,7 +18881,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "348:5",
+          "pos": "349:5",
           "args": [
             "\"              Env attenuated; allows HOME outside config keys: ${...}\""
           ],
@@ -18892,7 +18892,7 @@
         {
           "kind": "fn",
           "callee": "policy_from_config",
-          "pos": "349:18",
+          "pos": "350:18",
           "args": [
             "policy_cfg"
           ],
@@ -18903,7 +18903,7 @@
         {
           "kind": "method",
           "callee": "net.restrict_to",
-          "pos": "356:18",
+          "pos": "357:18",
           "args": [
             "\"api.frankfurter.app\""
           ],
@@ -18914,7 +18914,7 @@
         {
           "kind": "method",
           "callee": "fx_net.allows",
-          "pos": "357:25",
+          "pos": "358:25",
           "args": [
             "\"evil.example.com\""
           ],
@@ -18925,7 +18925,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "358:5",
+          "pos": "359:5",
           "args": [
             "\"\""
           ],
@@ -18936,7 +18936,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "359:5",
+          "pos": "360:5",
           "args": [
             "\"[fx]          Net attenuated to ${...}; allows evil.example.com: ${...}\""
           ],
@@ -18947,14 +18947,14 @@
         {
           "kind": "fn",
           "callee": "fx_host",
-          "pos": "359:54",
+          "pos": "360:54",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "360:5",
+          "pos": "361:5",
           "args": [
             "\"              conversion via fixed rate table (live net.get only under --live)\""
           ],
@@ -18965,7 +18965,7 @@
         {
           "kind": "method",
           "callee": "proc.restrict_to",
-          "pos": "363:21",
+          "pos": "364:21",
           "args": [
             "\"python\""
           ],
@@ -18976,7 +18976,7 @@
         {
           "kind": "method",
           "callee": "scan_proc.allows",
-          "pos": "364:27",
+          "pos": "365:27",
           "args": [
             "\"rm\""
           ],
@@ -18987,7 +18987,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "365:5",
+          "pos": "366:5",
           "args": [
             "\"[scan]        Proc attenuated to ${...}; allows rm: ${...}\""
           ],
@@ -18998,14 +18998,14 @@
         {
           "kind": "fn",
           "callee": "scan_cmd",
-          "pos": "365:55",
+          "pos": "366:55",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "live_scan",
-          "pos": "367:36",
+          "pos": "368:36",
           "args": [
             "scan_proc"
           ],
@@ -19026,7 +19026,7 @@
         {
           "kind": "fn",
           "callee": "fixed_scan",
-          "pos": "367:62",
+          "pos": "368:62",
           "args": [
             "\"receipt-001\""
           ],
@@ -19037,7 +19037,7 @@
         {
           "kind": "fn",
           "callee": "verdict_label",
-          "pos": "368:21",
+          "pos": "369:21",
           "args": [
             "verdict"
           ],
@@ -19048,7 +19048,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "369:5",
+          "pos": "370:5",
           "args": [
             "\"              receipt scan verdict: ${...} (live net.get/proc.exec only unde..."
           ],
@@ -19059,7 +19059,7 @@
         {
           "kind": "fn",
           "callee": "make_stdio_notifier",
-          "pos": "372:20",
+          "pos": "373:20",
           "args": [
             "stdio",
             "\"audit\""
@@ -19072,7 +19072,7 @@
         {
           "kind": "method",
           "callee": "fs.restrict_to",
-          "pos": "376:15",
+          "pos": "377:15",
           "args": [
             "\"out/\""
           ],
@@ -19083,7 +19083,7 @@
         {
           "kind": "method",
           "callee": "out.mkdir",
-          "pos": "377:11",
+          "pos": "378:11",
           "args": [
             "\"out/\""
           ],
@@ -19094,7 +19094,7 @@
         {
           "kind": "method",
           "callee": "fs.restrict_to",
-          "pos": "380:19",
+          "pos": "381:19",
           "args": [
             "\"data/\""
           ],
@@ -19105,7 +19105,7 @@
         {
           "kind": "fn",
           "callee": "import_claims",
-          "pos": "383:24",
+          "pos": "384:24",
           "args": [
             "data_fs",
             "cfg.input_path"
@@ -19128,7 +19128,7 @@
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "386:13",
+          "pos": "387:13",
           "args": [
             "\"intake failed: ${...}\""
           ],
@@ -19139,7 +19139,7 @@
         {
           "kind": "fn",
           "callee": "intake_error_message",
-          "pos": "386:46",
+          "pos": "387:46",
           "args": [
             "e"
           ],
@@ -19150,7 +19150,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "388:5",
+          "pos": "389:5",
           "args": [
             "\"\""
           ],
@@ -19161,7 +19161,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "389:5",
+          "pos": "390:5",
           "args": [
             "\"[intake]      imported ${...} claim(s) from ${...}\""
           ],
@@ -19172,14 +19172,14 @@
         {
           "kind": "method",
           "callee": "claims.length",
-          "pos": "389:45",
+          "pos": "390:45",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "logger.info",
-          "pos": "390:5",
+          "pos": "391:5",
           "args": [
             "\"intake: ${...} claim(s) loaded\""
           ],
@@ -19190,14 +19190,14 @@
         {
           "kind": "method",
           "callee": "claims.length",
-          "pos": "390:28",
+          "pos": "391:28",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "random.with_seed",
-          "pos": "393:18",
+          "pos": "394:18",
           "args": [
             "RNG_SEED"
           ],
@@ -19208,7 +19208,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "401:9",
+          "pos": "402:9",
           "args": [
             "\"\""
           ],
@@ -19219,7 +19219,7 @@
         {
           "kind": "fn",
           "callee": "mint_txn_id",
-          "pos": "402:22",
+          "pos": "403:22",
           "args": [
             "seeded"
           ],
@@ -19240,7 +19240,7 @@
         {
           "kind": "fn",
           "callee": "run_claim",
-          "pos": "403:19",
+          "pos": "404:19",
           "args": [
             "ic.id",
             "ic.employee",
@@ -19287,7 +19287,7 @@
         {
           "kind": "method",
           "callee": "records.push",
-          "pos": "405:9",
+          "pos": "406:9",
           "args": [
             "res.record"
           ],
@@ -19298,7 +19298,7 @@
         {
           "kind": "method",
           "callee": "report_lines.push",
-          "pos": "406:9",
+          "pos": "407:9",
           "args": [
             "res.line"
           ],
@@ -19309,7 +19309,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "410:5",
+          "pos": "411:5",
           "args": [
             "\"\""
           ],
@@ -19320,7 +19320,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "411:5",
+          "pos": "412:5",
           "args": [
             "\"ledger written to out/${...} (${...} entries)\""
           ],
@@ -19331,21 +19331,21 @@
         {
           "kind": "fn",
           "callee": "ledger_path",
-          "pos": "411:44",
+          "pos": "412:44",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "events.length",
-          "pos": "411:62",
+          "pos": "412:62",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "build_chain",
-          "pos": "414:17",
+          "pos": "415:17",
           "args": [
             "events"
           ],
@@ -19356,7 +19356,7 @@
         {
           "kind": "fn",
           "callee": "verify_chain",
-          "pos": "415:8",
+          "pos": "416:8",
           "args": [
             "lines"
           ],
@@ -19367,7 +19367,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "416:9",
+          "pos": "417:9",
           "args": [
             "\"ledger verified: ${...} entries, HMAC chain intact\""
           ],
@@ -19378,14 +19378,14 @@
         {
           "kind": "method",
           "callee": "lines.length",
-          "pos": "416:43",
+          "pos": "417:43",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "logger.info",
-          "pos": "417:9",
+          "pos": "418:9",
           "args": [
             "\"ledger verified: ${...} entries, chain intact\""
           ],
@@ -19396,14 +19396,14 @@
         {
           "kind": "method",
           "callee": "lines.length",
-          "pos": "417:41",
+          "pos": "418:41",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "419:9",
+          "pos": "420:9",
           "args": [
             "\"LEDGER TAMPERED: HMAC chain broken\""
           ],
@@ -19414,7 +19414,7 @@
         {
           "kind": "method",
           "callee": "logger.error",
-          "pos": "420:9",
+          "pos": "421:9",
           "args": [
             "\"ledger verification FAILED\""
           ],
@@ -19425,7 +19425,7 @@
         {
           "kind": "method",
           "callee": "db.restrict_to",
-          "pos": "423:20",
+          "pos": "424:20",
           "args": [
             "\"out/\""
           ],
@@ -19436,7 +19436,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "424:5",
+          "pos": "425:5",
           "args": [
             "\"\""
           ],
@@ -19447,7 +19447,7 @@
         {
           "kind": "method",
           "callee": "store_db.allows",
-          "pos": "425:25",
+          "pos": "426:25",
           "args": [
             "\"data/secrets.db\""
           ],
@@ -19458,7 +19458,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "426:5",
+          "pos": "427:5",
           "args": [
             "\"[store]       Db attenuated to out/; allows data/secrets.db: ${...}\""
           ],
@@ -19469,7 +19469,7 @@
         {
           "kind": "fn",
           "callee": "init_schema",
-          "pos": "427:11",
+          "pos": "428:11",
           "args": [
             "store_db",
             "store_path()"
@@ -19492,14 +19492,14 @@
         {
           "kind": "fn",
           "callee": "store_path",
-          "pos": "427:33",
+          "pos": "428:33",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "429:19",
+          "pos": "430:19",
           "args": [
             "\"schema init failed: ${...}\""
           ],
@@ -19510,7 +19510,7 @@
         {
           "kind": "fn",
           "callee": "record_claim",
-          "pos": "431:15",
+          "pos": "432:15",
           "args": [
             "store_db",
             "store_path()",
@@ -19535,14 +19535,14 @@
         {
           "kind": "fn",
           "callee": "store_path",
-          "pos": "431:38",
+          "pos": "432:38",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "433:23",
+          "pos": "434:23",
           "args": [
             "\"record_claim failed: ${...}\""
           ],
@@ -19553,7 +19553,7 @@
         {
           "kind": "fn",
           "callee": "record_ledger_line",
-          "pos": "436:15",
+          "pos": "437:15",
           "args": [
             "store_db",
             "store_path()",
@@ -19582,14 +19582,14 @@
         {
           "kind": "fn",
           "callee": "store_path",
-          "pos": "436:44",
+          "pos": "437:44",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "render_line",
-          "pos": "436:71",
+          "pos": "437:71",
           "args": [
             "line"
           ],
@@ -19600,7 +19600,7 @@
         {
           "kind": "fn",
           "callee": "summarize",
-          "pos": "440:25",
+          "pos": "441:25",
           "args": [
             "store_db",
             "store_path()"
@@ -19623,14 +19623,14 @@
         {
           "kind": "fn",
           "callee": "store_path",
-          "pos": "440:45",
+          "pos": "441:45",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "443:13",
+          "pos": "444:13",
           "args": [
             "\"summary query failed: ${...}\""
           ],
@@ -19641,7 +19641,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "445:5",
+          "pos": "446:5",
           "args": [
             "\"              rollup from SQLite (parse_json of db.query):\""
           ],
@@ -19652,7 +19652,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "447:9",
+          "pos": "448:9",
           "args": [
             "\"                ${...}\""
           ],
@@ -19663,7 +19663,7 @@
         {
           "kind": "fn",
           "callee": "summary_line",
-          "pos": "447:42",
+          "pos": "448:42",
           "args": [
             "s"
           ],
@@ -19674,7 +19674,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "455:5",
+          "pos": "456:5",
           "args": [
             "\"\""
           ],
@@ -19685,7 +19685,7 @@
         {
           "kind": "fn",
           "callee": "pick_reporter",
-          "pos": "456:24",
+          "pos": "457:24",
           "args": [
             "\"csv\""
           ],
@@ -19696,7 +19696,7 @@
         {
           "kind": "fn",
           "callee": "render_report",
-          "pos": "457:20",
+          "pos": "458:20",
           "args": [
             "csv_reporter",
             "data"
@@ -19709,7 +19709,7 @@
         {
           "kind": "method",
           "callee": "out.write",
-          "pos": "458:11",
+          "pos": "459:11",
           "args": [
             "report_path()",
             "csv_text"
@@ -19722,14 +19722,14 @@
         {
           "kind": "fn",
           "callee": "report_path",
-          "pos": "458:21",
+          "pos": "459:21",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "459:19",
+          "pos": "460:19",
           "args": [
             "\"[report]      CSV report written to ${...}\""
           ],
@@ -19740,14 +19740,14 @@
         {
           "kind": "fn",
           "callee": "report_path",
-          "pos": "459:72",
+          "pos": "460:72",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.eprintln",
-          "pos": "460:19",
+          "pos": "461:19",
           "args": [
             "\"report write failed: ${...}\""
           ],
@@ -19758,7 +19758,7 @@
         {
           "kind": "fn",
           "callee": "pick_reporter",
-          "pos": "461:18",
+          "pos": "462:18",
           "args": [
             "cfg.reporter"
           ],
@@ -19769,7 +19769,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "462:5",
+          "pos": "463:5",
           "args": [
             "\"\""
           ],
@@ -19780,7 +19780,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "463:5",
+          "pos": "464:5",
           "args": [
             "\"[report]      rendering '${...}' report:\""
           ],
@@ -19791,7 +19791,7 @@
         {
           "kind": "method",
           "callee": "stdio.print",
-          "pos": "464:5",
+          "pos": "465:5",
           "args": [
             "render_report(chosen, data)"
           ],
@@ -19802,7 +19802,7 @@
         {
           "kind": "fn",
           "callee": "render_report",
-          "pos": "464:17",
+          "pos": "465:17",
           "args": [
             "chosen",
             "data"
@@ -19815,7 +19815,7 @@
         {
           "kind": "method",
           "callee": "logger.info",
-          "pos": "466:5",
+          "pos": "467:5",
           "args": [
             "\"claimdesk done: ${...} claim(s) processed\""
           ],
@@ -19826,14 +19826,14 @@
         {
           "kind": "method",
           "callee": "records.length",
-          "pos": "466:36",
+          "pos": "467:36",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "467:5",
+          "pos": "468:5",
           "args": [
             "\"\""
           ],
@@ -19844,7 +19844,7 @@
         {
           "kind": "method",
           "callee": "stdio.println",
-          "pos": "468:5",
+          "pos": "469:5",
           "args": [
             "\"demo complete: parsed CLI, processed batch end-to-end, all 8 capabilities ex..."
           ],
@@ -19861,7 +19861,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "main.capa:472:1",
+      "pos": "main.capa:473:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -19905,7 +19905,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "main.capa:480:1",
+      "pos": "main.capa:481:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -19947,7 +19947,7 @@
         {
           "kind": "fn",
           "callee": "run_scan",
-          "pos": "481:18",
+          "pos": "482:18",
           "args": [
             "scan_proc",
             "\"receipt-001\""

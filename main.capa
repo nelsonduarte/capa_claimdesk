@@ -221,18 +221,19 @@ fun run_claim(
     log: Logger,
     stdio: Stdio
 ) -> ClaimResult
-    // Re-bind the @secret IBAN field into an explicitly @secret local
-    // before deriving anything from it. Load-bearing: a struct-field read
-    // does not currently carry its field-level @secret label on its own
-    // (compiler limitation, documented in the Phase 3 notes and README).
-    let iban: @secret String = employee.iban
-
+    // employee.iban is @secret at its field declaration, and that label
+    // is carried by the field read here: mask.mask_iban(employee.iban) is
+    // @secret, so it reaches a sink ONLY through the audited declassify
+    // below. Building this showcase surfaced a compiler hole where a
+    // @secret struct-field read (and its destructure) dropped the label;
+    // it was fixed in Capa v1.2.0 (commits a9b4905 and d2e5db5), so no
+    // re-binding workaround is needed and the declassify is load-bearing.
     let masked = declassify(
-        mask.mask_iban(iban),
+        mask.mask_iban(employee.iban),
         reason: "GDPR data minimisation: a ledger/report shows only the last four IBAN characters, never the full account"
     )
     let fp = declassify(
-        mask.iban_fingerprint(iban, fingerprint_key()),
+        mask.iban_fingerprint(employee.iban, fingerprint_key()),
         reason: "GDPR: a keyed one-way IBAN fingerprint correlates an employee across ledger entries; it is recorded in the audit ledger, never the IBAN itself"
     )
 

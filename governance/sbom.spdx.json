@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "main.capa",
-  "documentNamespace": "https://capa-language.com/spdx/13df1212-abcd-5c6a-b7cf-7aefcd6779ae",
+  "documentNamespace": "https://capa-language.com/spdx/3d4ecee5-aed0-5380-bbc1-1c4b2b4b7318",
   "creationInfo": {
     "created": "2026-06-15T00:00:00Z",
     "creators": [
@@ -26187,7 +26187,7 @@
           "annotationDate": "2026-06-15T00:00:00Z",
           "annotationType": "OTHER",
           "annotator": "Tool: capa",
-          "comment": "capa:pos=main.capa:291:1"
+          "comment": "capa:pos=main.capa:292:1"
         },
         {
           "annotationDate": "2026-06-15T00:00:00Z",
@@ -26306,7 +26306,7 @@
           "annotationDate": "2026-06-15T00:00:00Z",
           "annotationType": "OTHER",
           "annotator": "Tool: capa",
-          "comment": "capa:pos=main.capa:295:1"
+          "comment": "capa:pos=main.capa:296:1"
         },
         {
           "annotationDate": "2026-06-15T00:00:00Z",
@@ -26509,7 +26509,7 @@
           "annotationDate": "2026-06-15T00:00:00Z",
           "annotationType": "OTHER",
           "annotator": "Tool: capa",
-          "comment": "capa:pos=main.capa:472:1"
+          "comment": "capa:pos=main.capa:473:1"
         },
         {
           "annotationDate": "2026-06-15T00:00:00Z",
@@ -26622,7 +26622,7 @@
           "annotationDate": "2026-06-15T00:00:00Z",
           "annotationType": "OTHER",
           "annotator": "Tool: capa",
-          "comment": "capa:pos=main.capa:480:1"
+          "comment": "capa:pos=main.capa:481:1"
         },
         {
           "annotationDate": "2026-06-15T00:00:00Z",
