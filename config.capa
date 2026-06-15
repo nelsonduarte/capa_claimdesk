@@ -100,12 +100,16 @@ pub fun load_policy_config(env: Env) -> PolicyConfig
 // config. This is the same rule list Phase 3 built by hand, now sourced
 // from configuration data.
 pub fun policy_from_config(cfg: PolicyConfig) -> List<Rule>
-    var rules: List<Rule> = []
-    rules.push(CurrencyConsistencyRule { expected: EUR })
-    rules.push(TotalLimitRule { limit: money(cfg.total_limit_cents, EUR), warn_margin: cfg.total_warn_margin_cents })
-    rules.push(CategoryLimitRule { category: Meals, limit: money(cfg.meals_limit_cents, EUR) })
-    rules.push(ReceiptRequiredRule { threshold: money(cfg.receipt_threshold_cents, EUR) })
-    rules.push(DuplicateLineRule {})
+    // A fixed five-rule policy; only the thresholds vary with the config.
+    // The annotated list literal unifies the five distinct concrete rule
+    // types to the `Rule` trait at the one annotation.
+    let rules: List<Rule> = [
+        CurrencyConsistencyRule { expected: EUR },
+        TotalLimitRule { limit: money(cfg.total_limit_cents, EUR), warn_margin: cfg.total_warn_margin_cents },
+        CategoryLimitRule { category: Meals, limit: money(cfg.meals_limit_cents, EUR) },
+        ReceiptRequiredRule { threshold: money(cfg.receipt_threshold_cents, EUR) },
+        DuplicateLineRule {}
+    ]
     return rules
 
 // A one-line, human-readable summary of the resolved config, for the
