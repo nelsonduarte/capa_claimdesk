@@ -1,13 +1,16 @@
 // capa_claimdesk.intake
 //
 // Phase 4/5 adapter: batch claim import from a CSV file. It reads an
-// expense-line CSV through an attenuated `Fs`, parses it with a small
-// header-aware reader, groups the lines by claim id, and builds the
-// domain's `Employee` + `List<ExpenseLine>` for each claim. The pure
-// engine downstream never sees a String row; it sees typed domain values.
+// expense-line CSV through an attenuated `Fs`, parses it with the
+// capa_csv library's header-aware reader, groups the lines by claim id,
+// and builds the domain's `Employee` + `List<ExpenseLine>` for each
+// claim. The pure engine downstream never sees a String row; it sees
+// typed domain values.
 //
 // CAPABILITY: Fs, and only Fs (for the one read). Parsing and model
 // construction are pure. This module holds no Db / Net / Env / Stdio.
+// capa_csv is itself zero-capability, so reaching it does not widen
+// intake's surface.
 //
 // ATTENUATION. `import_claims` reads through an `Fs` the caller has
 // already narrowed to the data directory; the read path is checked
@@ -21,19 +24,17 @@
 // adapter does not read the iban back out or print it, so it introduces
 // ZERO new declassification sites.
 //
-// A NOTE ON THE CSV LIBRARY (Phase 5). Phase 4 parsed the CSV with the
-// capa_csv library's `parse_headed`. Phase 5 adds the capa_cli library for
-// the command line, and capa_cli ALSO exports a top-level `parse`. The
-// compiler links every imported module's pub items into one flat global
-// namespace (aliasing is parsed but ignored at link time), so two
-// dependencies that both export `parse` cannot coexist in one program:
-// linking `capa_cli.parser` and `capa_csv.parse` together is a hard
-// `name conflict: 'parse'` error. Reported upstream as a compiler
-// limitation. The workaround keeps BOTH libraries in the program: intake
-// parses the (simple, unquoted) claim CSV with a small local reader so it
-// no longer pulls `capa_csv.parse`, while the report adapter keeps using
-// capa_csv's `write`/`model` (which do not export `parse`). capa_csv stays
-// a verified dependency; capa_cli drives the CLI; the IO story is intact.
+// TWO REGISTRY LIBRARIES, ONE NAMESPACE (selective import). This module
+// reads the batch CSV with capa_csv while the CLI front end (cli.capa)
+// reads argv with capa_cli, and BOTH libraries export a top-level
+// `pub fun parse`. A whole-module `import capa_csv.parse` would link its
+// `parse` into the same flat namespace as capa_cli's, a hard
+// `name conflict: 'parse'`. The selective import below brings in exactly
+// the header-aware reader and the typed model intake uses, under explicit
+// names, and keeps capa_csv's bare `parse` out of scope, so the two
+// registry dependencies coexist with no collision. (This collision was
+// the workaround driver in v1.1.0; v1.2.0's selective import resolves it,
+// and intake now parses through the real capa_csv.)
 //
 // ERRORS. Every failure is a typed `Result`: a missing column, an
 // unparseable amount, an unknown currency code, or no rows. Malformed
@@ -41,12 +42,15 @@
 
 import capa_claimdesk.money
 import capa_claimdesk.domain
+import capa_csv.header (parse_headed as csv_parse_headed, HeaderTable)
+import capa_csv.model (CsvError, error_message)
 
 // The import error channel. All domain-level failures intake can detect.
 pub type IntakeError =
     NoColumn(String)
     BadAmount(String)
     BadCurrency(String)
+    BadCsv(String)
     NoRows
 
 pub fun intake_error_message(e: IntakeError) -> String
@@ -54,6 +58,7 @@ pub fun intake_error_message(e: IntakeError) -> String
         NoColumn(c)    -> "missing column: ${c}"
         BadAmount(s)   -> "bad amount: ${s}"
         BadCurrency(s) -> "unknown currency code: ${s}"
+        BadCsv(m)      -> "malformed CSV: ${m}"
         NoRows         -> "no claim rows in input"
 
 // One imported claim: the id, the (single) employee it belongs to, and
@@ -64,52 +69,9 @@ pub type ImportedClaim {
     lines: List<ExpenseLine>
 }
 
-// A header-addressed view of a parsed CSV: the column names and the data
-// rows (each a list of string fields). Built locally so intake does not
-// depend on capa_csv's `parse` (see the module note above).
-type HeaderTable {
-    columns: List<String>,
-    rows: List<List<String>>
-}
-
-// Split one CSV record into fields on commas. The claim CSV is simple,
-// unquoted data (no embedded commas, quotes, or newlines), so a plain
-// split is correct here; a quoted-field CSV would need capa_csv.
-fun split_record(line: String) -> List<String>
-    return line.split(",")
-
-// Parse the whole CSV text into a HeaderTable: the first non-empty line is
-// the header, the rest are data rows. Trailing empty lines are skipped.
-fun parse_headed_local(text: String) -> HeaderTable
-    let raw = text.split("\n")
-    var lines: List<String> = []
-    for ln in raw
-        let trimmed = ln.trim()
-        if trimmed != ""
-            lines.push(trimmed)
-    var columns: List<String> = []
-    var rows: List<List<String>> = []
-    var first = true
-    for ln in lines
-        if first
-            columns = split_record(ln)
-            first = false
-        else
-            rows.push(split_record(ln))
-    return HeaderTable { columns: columns, rows: rows }
-
-// The zero-based index of a named column, or None if absent.
-fun column_index(table: HeaderTable, name: String) -> Option<Int>
-    var i = 0
-    for header_col in table.columns
-        if header_col == name
-            return Some(i)
-        i = i + 1
-    return None
-
 // The number of data rows (header excluded).
 fun row_count(table: HeaderTable) -> Int
-    return table.rows.length()
+    return table.length()
 
 // Parse a currency code into the closed Currency set. An unknown code is
 // a typed error, never a silent default.
@@ -137,18 +99,13 @@ fun parse_category(name: String) -> Category
         "Equipment" -> Equipment
         _           -> Other
 
-// Read one named column from a data row, lifting a missing column or a
-// short row into the intake error channel.
+// Read one named column from a data row, lifting capa_csv's typed
+// CsvError (unknown column, no such row, short row) into the intake
+// error channel.
 fun col(table: HeaderTable, row: Int, name: String) -> Result<String, IntakeError>
-    let idx = match column_index(table, name)
-        Some(i) -> i
-        None    -> return Err(NoColumn(name))
-    let fields = match table.rows.get(row)
-        Some(f) -> f
-        None    -> return Err(NoColumn(name))
-    return match fields.get(idx)
-        Some(v) -> Ok(v.trim())
-        None    -> Err(NoColumn(name))
+    return match table.get(row, name)
+        Ok(v)  -> Ok(v.trim())
+        Err(_) -> Err(NoColumn(name))
 
 // Build one ExpenseLine from a CSV row.
 fun line_from_row(table: HeaderTable, row: Int) -> Result<ExpenseLine, IntakeError>
@@ -171,19 +128,19 @@ fun employee_from_row(table: HeaderTable, row: Int) -> Result<Employee, IntakeEr
     return Ok(employee(id, name, department, iban))
 
 // Import claims from CSV text already in memory. Pure (no capability):
-// parse, then fold the data rows into claims grouped by claim_id,
-// preserving file order for both claims and their lines. Exposed
-// separately from `import_claims` so it can be unit-tested without an Fs.
+// parse with capa_csv, then fold the data rows into claims grouped by
+// claim_id, preserving file order for both claims and their lines.
+// Exposed separately from `import_claims` so it can be unit-tested
+// without an Fs.
 pub fun import_from_text(text: String) -> Result<List<ImportedClaim>, IntakeError>
-    let table = parse_headed_local(text)
+    let table = match csv_parse_headed(text)
+        Ok(t)  -> t
+        Err(e) -> return Err(BadCsv(error_message(e)))
     let n = row_count(table)
     if n == 0
         return Err(NoRows)
 
     var claims: List<ImportedClaim> = []
-    // A bound name (not `_`) is used deliberately: the Wasm backend does
-    // not yet lower a wildcard for-pattern (`for _ in ...`), a cross-
-    // backend gap reported upstream; here the index is needed anyway.
     for i in 0..n
         let claim_id = col(table, i, "claim_id")?
         let line = line_from_row(table, i)?

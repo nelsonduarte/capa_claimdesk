@@ -6,6 +6,11 @@
 // this module; main holds the Stdio that prints help, and the Env that
 // supplies argv.
 //
+// capa_cli and capa_csv both export a top-level `pub fun parse`. Both are
+// brought in under explicit names via selective import (capa_cli's here
+// as `cli_parse`, capa_csv's in intake.capa), so the two registry
+// dependencies coexist in one program with no name collision.
+//
 // The schema:
 //   --input <csv>        path to the claim batch CSV (default data/claims.csv)
 //   --reporter <name>    text | csv | json (default text on the console)
@@ -18,7 +23,7 @@
 // both backends. --live only toggles the fx/scan adapters onto their real
 // capability calls, which are documented as outside the compared flow.
 
-import capa_cli.parser
+import capa_cli.parser (parse as cli_parse, format_help, ArgSchema, Flag, Opt, Positional, ParsedArgs, ArgError)
 
 // The typed result of parsing claimdesk's command line. A plain data
 // record consumed by main; carries no capability.
@@ -73,7 +78,7 @@ fun config_from_parsed(parsed: ParsedArgs) -> RunConfig
 // ArgError into claimdesk's flat outcome so main matches one sum type.
 pub fun parse_args(args: List<String>) -> CliOutcome
     let schema = build_schema()
-    return match parse(schema, args)
+    return match cli_parse(schema, args)
         Ok(parsed)         -> Run(config_from_parsed(parsed))
         Err(HelpRequested) -> ShowHelp
         Err(Missing(name)) -> ArgsError("missing required argument '${name}'")
