@@ -16,7 +16,7 @@
         "source": "main.capa"
       },
       "internalParameters": {
-        "capaVersion": "1.1.0",
+        "capaVersion": "1.2.0",
         "target": "python>=3.10"
       },
       "resolvedDependencies": []
@@ -25,7 +25,7 @@
       "builder": {
         "id": "https://capa-language.com/cli",
         "version": {
-          "capa": "1.1.0"
+          "capa": "1.2.0"
         }
       },
       "metadata": {

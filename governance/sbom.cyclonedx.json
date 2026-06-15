@@ -10,7 +10,7 @@
         {
           "type": "application",
           "name": "capa",
-          "version": "1.1.0"
+          "version": "1.2.0"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "bom-ref": "capa:program:main.capa",
       "type": "application",
       "name": "main.capa",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "supplier": {
         "name": "capa-build"
       },
@@ -31,7 +31,7 @@
       },
       {
         "name": "capa:summary:total_functions",
-        "value": "205"
+        "value": "213"
       },
       {
         "name": "capa:summary:functions_with_capabilities",
@@ -9064,7 +9064,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "config.capa:114:5"
+          "value": "config.capa:118:5"
         },
         {
           "name": "capa:return_type",
@@ -9129,6 +9129,1318 @@
       ]
     },
     {
+      "bom-ref": "capa:fn:main.capa:comma",
+      "type": "library",
+      "name": "comma",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:31:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Dialect"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "The default RFC 4180 dialect: comma-delimited."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:tab",
+      "type": "library",
+      "name": "tab",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:35:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Dialect"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Tab-separated values."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:with_delimiter",
+      "type": "library",
+      "name": "with_delimiter",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:42:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Dialect"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "A dialect with an arbitrary single-character delimiter. A\ndelimiter that is not exactly one character, or that is the\nquote character itself, is a programming error the parser\nrejects with `BadDialect` rather than misbehaving silently."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "delim: String"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:error_message",
+      "type": "library",
+      "name": "error_message",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:88:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "String"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "A human-readable, backend-identical rendering of an error.\nPositions are 1-based record numbers, the unit an operator\nreasons about."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "e: CsvError"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:_capa_m17__at",
+      "type": "library",
+      "name": "at",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:34:1"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "String"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "false"
+        },
+        {
+          "name": "capa:source_module_index",
+          "value": "17"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "s: String"
+        },
+        {
+          "name": "capa:param",
+          "value": "i: Int"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:parse",
+      "type": "library",
+      "name": "parse",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:40:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Result<Table, CsvError>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Parse CSV text with the default comma dialect."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "text: String"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:parse_with",
+      "type": "library",
+      "name": "parse_with",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:44:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Result<Table, CsvError>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Parse CSV text with an explicit dialect."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "text: String"
+        },
+        {
+          "name": "capa:param",
+          "value": "dialect: Dialect"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:_capa_m17__scan_quoted",
+      "type": "library",
+      "name": "scan_quoted",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:131:1"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Result<Quoted, CsvError>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "false"
+        },
+        {
+          "name": "capa:source_module_index",
+          "value": "17"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "text: String"
+        },
+        {
+          "name": "capa:param",
+          "value": "start: Int"
+        },
+        {
+          "name": "capa:param",
+          "value": "record_no: Int"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:csv_parse_headed",
+      "type": "library",
+      "name": "csv_parse_headed",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:24:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Result<HeaderTable, CsvError>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Parse CSV text and take its first record as the header.\nEmpty input yields an empty header and no rows."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "text: String"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:_capa_m15__sel__parse_headed_with",
+      "type": "library",
+      "name": "sel__parse_headed_with",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:28:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Result<HeaderTable, CsvError>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:source_module_index",
+          "value": "15"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Parse with an explicit dialect, first record as the header."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "text: String"
+        },
+        {
+          "name": "capa:param",
+          "value": "dialect: Dialect"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:_capa_m15__sel__from_table",
+      "type": "library",
+      "name": "sel__from_table",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:34:5"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "HeaderTable"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:source_module_index",
+          "value": "15"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Build a header view from an already-parsed Table. The first\nrecord becomes the columns; the rest become the data rows."
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "table: Table"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:HeaderTable::length",
+      "type": "library",
+      "name": "HeaderTable::length",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:48:9"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Int"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "The number of data records (header excluded)."
+        },
+        {
+          "name": "capa:container",
+          "value": "HeaderTable"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "self: Self"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:HeaderTable::column_index",
+      "type": "library",
+      "name": "HeaderTable::column_index",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:52:9"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Option<Int>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "The zero-based index of a column, or None if absent."
+        },
+        {
+          "name": "capa:container",
+          "value": "HeaderTable"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "self: Self"
+        },
+        {
+          "name": "capa:param",
+          "value": "name: String"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:HeaderTable::has_column",
+      "type": "library",
+      "name": "HeaderTable::has_column",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:61:9"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Bool"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "Whether the header declares a column by this name."
+        },
+        {
+          "name": "capa:container",
+          "value": "HeaderTable"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "self: Self"
+        },
+        {
+          "name": "capa:param",
+          "value": "name: String"
+        }
+      ]
+    },
+    {
+      "bom-ref": "capa:fn:main.capa:HeaderTable::get",
+      "type": "library",
+      "name": "HeaderTable::get",
+      "scope": "required",
+      "supplier": {
+        "name": "capa-build"
+      },
+      "licenses": [],
+      "properties": [
+        {
+          "name": "capa:kind",
+          "value": "function"
+        },
+        {
+          "name": "capa:pos",
+          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:72:9"
+        },
+        {
+          "name": "capa:return_type",
+          "value": "Result<String, CsvError>"
+        },
+        {
+          "name": "capa:has_unsafe",
+          "value": "false"
+        },
+        {
+          "name": "capa:is_pub",
+          "value": "true"
+        },
+        {
+          "name": "capa:doc",
+          "value": "The value of `column` in data record `row_index`\n(zero-based, header excluded). Errors with `NoSuchColumn`\nwhen the header has no such column, with `NoSuchRow` when\nthere is no data record at `row_index`, and with `ShortRow`\nwhen the record exists but has fewer fields than the\ncolumn's index."
+        },
+        {
+          "name": "capa:container",
+          "value": "HeaderTable"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Clock"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Db"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Env"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Fs"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Logger"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Net"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Notifier"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Proc"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Random"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Stdio"
+        },
+        {
+          "name": "capa:provably_excluded_capability",
+          "value": "Unsafe"
+        },
+        {
+          "name": "capa:param",
+          "value": "self: Self"
+        },
+        {
+          "name": "capa:param",
+          "value": "row_index: Int"
+        },
+        {
+          "name": "capa:param",
+          "value": "column: String"
+        }
+      ]
+    },
+    {
       "bom-ref": "capa:fn:main.capa:intake_error_message",
       "type": "library",
       "name": "intake_error_message",
@@ -9144,7 +10456,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:52:5"
+          "value": "intake.capa:56:5"
         },
         {
           "name": "capa:return_type",
@@ -9209,262 +10521,6 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m14__split_record",
-      "type": "library",
-      "name": "split_record",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "intake.capa:78:1"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "List<String>"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "false"
-        },
-        {
-          "name": "capa:source_module_index",
-          "value": "14"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        },
-        {
-          "name": "capa:param",
-          "value": "line: String"
-        }
-      ]
-    },
-    {
-      "bom-ref": "capa:fn:main.capa:_capa_m14__parse_headed_local",
-      "type": "library",
-      "name": "parse_headed_local",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "intake.capa:83:1"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "HeaderTable"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "false"
-        },
-        {
-          "name": "capa:source_module_index",
-          "value": "14"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        },
-        {
-          "name": "capa:param",
-          "value": "text: String"
-        }
-      ]
-    },
-    {
-      "bom-ref": "capa:fn:main.capa:_capa_m14__column_index",
-      "type": "library",
-      "name": "column_index",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "intake.capa:102:1"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "Option<Int>"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "false"
-        },
-        {
-          "name": "capa:source_module_index",
-          "value": "14"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        },
-        {
-          "name": "capa:param",
-          "value": "table: HeaderTable"
-        },
-        {
-          "name": "capa:param",
-          "value": "name: String"
-        }
-      ]
-    },
-    {
       "bom-ref": "capa:fn:main.capa:_capa_m14__row_count",
       "type": "library",
       "name": "row_count",
@@ -9480,7 +10536,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:111:1"
+          "value": "intake.capa:73:1"
         },
         {
           "name": "capa:return_type",
@@ -9564,7 +10620,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:116:1"
+          "value": "intake.capa:78:1"
         },
         {
           "name": "capa:return_type",
@@ -9648,7 +10704,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:125:1"
+          "value": "intake.capa:87:1"
         },
         {
           "name": "capa:return_type",
@@ -9732,7 +10788,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:132:1"
+          "value": "intake.capa:94:1"
         },
         {
           "name": "capa:return_type",
@@ -9816,7 +10872,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:142:1"
+          "value": "intake.capa:105:1"
         },
         {
           "name": "capa:return_type",
@@ -9908,7 +10964,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:154:1"
+          "value": "intake.capa:111:1"
         },
         {
           "name": "capa:return_type",
@@ -9996,7 +11052,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:166:1"
+          "value": "intake.capa:123:1"
         },
         {
           "name": "capa:return_type",
@@ -10084,7 +11140,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:177:5"
+          "value": "intake.capa:135:5"
         },
         {
           "name": "capa:return_type",
@@ -10164,7 +11220,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "intake.capa:218:5"
+          "value": "intake.capa:175:5"
         },
         {
           "name": "capa:return_type",
@@ -10237,7 +11293,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m15__sql_quote",
+      "bom-ref": "capa:fn:main.capa:_capa_m18__sql_quote",
       "type": "library",
       "name": "sql_quote",
       "scope": "required",
@@ -10268,7 +11324,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "15"
+          "value": "18"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -10601,7 +11657,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m15__row_to_summary",
+      "bom-ref": "capa:fn:main.capa:_capa_m18__row_to_summary",
       "type": "library",
       "name": "row_to_summary",
       "scope": "required",
@@ -10632,7 +11688,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "15"
+          "value": "18"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -10685,7 +11741,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m15__string_to_int",
+      "bom-ref": "capa:fn:main.capa:_capa_m18__string_to_int",
       "type": "library",
       "name": "string_to_int",
       "scope": "required",
@@ -10716,7 +11772,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "15"
+          "value": "18"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -10933,334 +11989,6 @@
         {
           "name": "capa:param",
           "value": "s: VerdictSummary"
-        }
-      ]
-    },
-    {
-      "bom-ref": "capa:fn:main.capa:comma",
-      "type": "library",
-      "name": "comma",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:31:5"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "Dialect"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "true"
-        },
-        {
-          "name": "capa:doc",
-          "value": "The default RFC 4180 dialect: comma-delimited."
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        }
-      ]
-    },
-    {
-      "bom-ref": "capa:fn:main.capa:tab",
-      "type": "library",
-      "name": "tab",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:35:5"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "Dialect"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "true"
-        },
-        {
-          "name": "capa:doc",
-          "value": "Tab-separated values."
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        }
-      ]
-    },
-    {
-      "bom-ref": "capa:fn:main.capa:with_delimiter",
-      "type": "library",
-      "name": "with_delimiter",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:42:5"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "Dialect"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "true"
-        },
-        {
-          "name": "capa:doc",
-          "value": "A dialect with an arbitrary single-character delimiter. A\ndelimiter that is not exactly one character, or that is the\nquote character itself, is a programming error the parser\nrejects with `BadDialect` rather than misbehaving silently."
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        },
-        {
-          "name": "capa:param",
-          "value": "delim: String"
-        }
-      ]
-    },
-    {
-      "bom-ref": "capa:fn:main.capa:error_message",
-      "type": "library",
-      "name": "error_message",
-      "scope": "required",
-      "supplier": {
-        "name": "capa-build"
-      },
-      "licenses": [],
-      "properties": [
-        {
-          "name": "capa:kind",
-          "value": "function"
-        },
-        {
-          "name": "capa:pos",
-          "value": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:88:5"
-        },
-        {
-          "name": "capa:return_type",
-          "value": "String"
-        },
-        {
-          "name": "capa:has_unsafe",
-          "value": "false"
-        },
-        {
-          "name": "capa:is_pub",
-          "value": "true"
-        },
-        {
-          "name": "capa:doc",
-          "value": "A human-readable, backend-identical rendering of an error.\nPositions are 1-based record numbers, the unit an operator\nreasons about."
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Clock"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Db"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Env"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Fs"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Logger"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Net"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Notifier"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Proc"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Random"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Stdio"
-        },
-        {
-          "name": "capa:provably_excluded_capability",
-          "value": "Unsafe"
-        },
-        {
-          "name": "capa:param",
-          "value": "e: CsvError"
         }
       ]
     },
@@ -11609,7 +12337,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m18__encode_row",
+      "bom-ref": "capa:fn:main.capa:_capa_m20__encode_row",
       "type": "library",
       "name": "encode_row",
       "scope": "required",
@@ -11640,7 +12368,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "18"
+          "value": "20"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -11697,7 +12425,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m18__encode_field",
+      "bom-ref": "capa:fn:main.capa:_capa_m20__encode_field",
       "type": "library",
       "name": "encode_field",
       "scope": "required",
@@ -11728,7 +12456,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "18"
+          "value": "20"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -11785,7 +12513,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m18__needs_quoting",
+      "bom-ref": "capa:fn:main.capa:_capa_m20__needs_quoting",
       "type": "library",
       "name": "needs_quoting",
       "scope": "required",
@@ -11816,7 +12544,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "18"
+          "value": "20"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -12377,7 +13105,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m19__rate_per_10000",
+      "bom-ref": "capa:fn:main.capa:_capa_m21__rate_per_10000",
       "type": "library",
       "name": "rate_per_10000",
       "scope": "required",
@@ -12408,7 +13136,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "19"
+          "value": "21"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -12461,7 +13189,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m19__apply_rate",
+      "bom-ref": "capa:fn:main.capa:_capa_m21__apply_rate",
       "type": "library",
       "name": "apply_rate",
       "scope": "required",
@@ -12492,7 +13220,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "19"
+          "value": "21"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -12549,7 +13277,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m19__is_eur_currency",
+      "bom-ref": "capa:fn:main.capa:_capa_m21__is_eur_currency",
       "type": "library",
       "name": "is_eur_currency",
       "scope": "required",
@@ -12580,7 +13308,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "19"
+          "value": "21"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -12713,7 +13441,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m19__parse_rate",
+      "bom-ref": "capa:fn:main.capa:_capa_m21__parse_rate",
       "type": "library",
       "name": "parse_rate",
       "scope": "required",
@@ -12744,7 +13472,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "19"
+          "value": "21"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -13205,7 +13933,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m20__verdict_from_output",
+      "bom-ref": "capa:fn:main.capa:_capa_m22__verdict_from_output",
       "type": "library",
       "name": "verdict_from_output",
       "scope": "required",
@@ -13236,7 +13964,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "20"
+          "value": "22"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -13661,9 +14389,9 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:parse",
+      "bom-ref": "capa:fn:main.capa:cli_parse",
       "type": "library",
-      "name": "parse",
+      "name": "cli_parse",
       "scope": "required",
       "supplier": {
         "name": "capa-build"
@@ -13745,7 +14473,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__handle_long",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__handle_long",
       "type": "library",
       "name": "handle_long",
       "scope": "required",
@@ -13776,7 +14504,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -13849,7 +14577,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__handle_short",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__handle_short",
       "type": "library",
       "name": "handle_short",
       "scope": "required",
@@ -13880,7 +14608,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -13953,7 +14681,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__find_flag_long",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__find_flag_long",
       "type": "library",
       "name": "find_flag_long",
       "scope": "required",
@@ -13984,7 +14712,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14041,7 +14769,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__find_flag_short",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__find_flag_short",
       "type": "library",
       "name": "find_flag_short",
       "scope": "required",
@@ -14072,7 +14800,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14129,7 +14857,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__find_option_long",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__find_option_long",
       "type": "library",
       "name": "find_option_long",
       "scope": "required",
@@ -14160,7 +14888,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14217,7 +14945,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__find_option_short",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__find_option_short",
       "type": "library",
       "name": "find_option_short",
       "scope": "required",
@@ -14248,7 +14976,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14385,7 +15113,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__pad_name",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__pad_name",
       "type": "library",
       "name": "pad_name",
       "scope": "required",
@@ -14416,7 +15144,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14469,7 +15197,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__flag_label",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__flag_label",
       "type": "library",
       "name": "flag_label",
       "scope": "required",
@@ -14500,7 +15228,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14553,7 +15281,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__opt_label",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__opt_label",
       "type": "library",
       "name": "opt_label",
       "scope": "required",
@@ -14584,7 +15312,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14637,7 +15365,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m23__spaces",
+      "bom-ref": "capa:fn:main.capa:_capa_m25__spaces",
       "type": "library",
       "name": "spaces",
       "scope": "required",
@@ -14668,7 +15396,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "23"
+          "value": "25"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14740,7 +15468,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "cli.capa:33:5"
+          "value": "cli.capa:38:5"
         },
         {
           "name": "capa:return_type",
@@ -14801,7 +15529,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m22__config_from_parsed",
+      "bom-ref": "capa:fn:main.capa:_capa_m24__config_from_parsed",
       "type": "library",
       "name": "config_from_parsed",
       "scope": "required",
@@ -14816,7 +15544,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "cli.capa:60:1"
+          "value": "cli.capa:65:1"
         },
         {
           "name": "capa:return_type",
@@ -14832,7 +15560,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "22"
+          "value": "24"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -14900,7 +15628,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "cli.capa:74:5"
+          "value": "cli.capa:79:5"
         },
         {
           "name": "capa:return_type",
@@ -14980,7 +15708,7 @@
         },
         {
           "name": "capa:pos",
-          "value": "cli.capa:85:5"
+          "value": "cli.capa:90:5"
         },
         {
           "name": "capa:return_type",
@@ -16237,7 +16965,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m26__idiv",
+      "bom-ref": "capa:fn:main.capa:_capa_m28__idiv",
       "type": "library",
       "name": "idiv",
       "scope": "required",
@@ -16268,7 +16996,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "26"
+          "value": "28"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -16325,7 +17053,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m26__idiv_float",
+      "bom-ref": "capa:fn:main.capa:_capa_m28__idiv_float",
       "type": "library",
       "name": "idiv_float",
       "scope": "required",
@@ -16356,7 +17084,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "26"
+          "value": "28"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -16413,7 +17141,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m26__pad2",
+      "bom-ref": "capa:fn:main.capa:_capa_m28__pad2",
       "type": "library",
       "name": "pad2",
       "scope": "required",
@@ -16444,7 +17172,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "26"
+          "value": "28"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -16497,7 +17225,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m26__pad4",
+      "bom-ref": "capa:fn:main.capa:_capa_m28__pad4",
       "type": "library",
       "name": "pad4",
       "scope": "required",
@@ -16528,7 +17256,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "26"
+          "value": "28"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -16581,7 +17309,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m26__parse_int_substring",
+      "bom-ref": "capa:fn:main.capa:_capa_m28__parse_int_substring",
       "type": "library",
       "name": "parse_int_substring",
       "scope": "required",
@@ -16612,7 +17340,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "26"
+          "value": "28"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -16673,7 +17401,7 @@
       ]
     },
     {
-      "bom-ref": "capa:fn:main.capa:_capa_m26__expect_char",
+      "bom-ref": "capa:fn:main.capa:_capa_m28__expect_char",
       "type": "library",
       "name": "expect_char",
       "scope": "required",
@@ -16704,7 +17432,7 @@
         },
         {
           "name": "capa:source_module_index",
-          "value": "26"
+          "value": "28"
         },
         {
           "name": "capa:provably_excluded_capability",
@@ -18256,10 +18984,22 @@
         "capa:fn:main.capa:load_policy_config",
         "capa:fn:main.capa:policy_from_config",
         "capa:fn:main.capa:describe_config",
+        "capa:fn:main.capa:comma",
+        "capa:fn:main.capa:tab",
+        "capa:fn:main.capa:with_delimiter",
+        "capa:fn:main.capa:error_message",
+        "capa:fn:main.capa:_capa_m17__at",
+        "capa:fn:main.capa:parse",
+        "capa:fn:main.capa:parse_with",
+        "capa:fn:main.capa:_capa_m17__scan_quoted",
+        "capa:fn:main.capa:csv_parse_headed",
+        "capa:fn:main.capa:_capa_m15__sel__parse_headed_with",
+        "capa:fn:main.capa:_capa_m15__sel__from_table",
+        "capa:fn:main.capa:HeaderTable::length",
+        "capa:fn:main.capa:HeaderTable::column_index",
+        "capa:fn:main.capa:HeaderTable::has_column",
+        "capa:fn:main.capa:HeaderTable::get",
         "capa:fn:main.capa:intake_error_message",
-        "capa:fn:main.capa:_capa_m14__split_record",
-        "capa:fn:main.capa:_capa_m14__parse_headed_local",
-        "capa:fn:main.capa:_capa_m14__column_index",
         "capa:fn:main.capa:_capa_m14__row_count",
         "capa:fn:main.capa:_capa_m14__parse_currency",
         "capa:fn:main.capa:_capa_m14__parse_amount_part",
@@ -18269,60 +19009,56 @@
         "capa:fn:main.capa:_capa_m14__employee_from_row",
         "capa:fn:main.capa:import_from_text",
         "capa:fn:main.capa:import_claims",
-        "capa:fn:main.capa:_capa_m15__sql_quote",
+        "capa:fn:main.capa:_capa_m18__sql_quote",
         "capa:fn:main.capa:init_schema",
         "capa:fn:main.capa:record_claim",
         "capa:fn:main.capa:record_ledger_line",
-        "capa:fn:main.capa:_capa_m15__row_to_summary",
-        "capa:fn:main.capa:_capa_m15__string_to_int",
+        "capa:fn:main.capa:_capa_m18__row_to_summary",
+        "capa:fn:main.capa:_capa_m18__string_to_int",
         "capa:fn:main.capa:summarize",
         "capa:fn:main.capa:summary_line",
-        "capa:fn:main.capa:comma",
-        "capa:fn:main.capa:tab",
-        "capa:fn:main.capa:with_delimiter",
-        "capa:fn:main.capa:error_message",
         "capa:fn:main.capa:write",
         "capa:fn:main.capa:write_with",
         "capa:fn:main.capa:write_row",
         "capa:fn:main.capa:write_row_with",
-        "capa:fn:main.capa:_capa_m18__encode_row",
-        "capa:fn:main.capa:_capa_m18__encode_field",
-        "capa:fn:main.capa:_capa_m18__needs_quoting",
+        "capa:fn:main.capa:_capa_m20__encode_row",
+        "capa:fn:main.capa:_capa_m20__encode_field",
+        "capa:fn:main.capa:_capa_m20__needs_quoting",
         "capa:fn:main.capa:TextReporter::render",
         "capa:fn:main.capa:CsvReporter::render",
         "capa:fn:main.capa:JsonReporter::render",
         "capa:fn:main.capa:pick_reporter",
         "capa:fn:main.capa:render_report",
         "capa:fn:main.capa:fx_host",
-        "capa:fn:main.capa:_capa_m19__rate_per_10000",
-        "capa:fn:main.capa:_capa_m19__apply_rate",
-        "capa:fn:main.capa:_capa_m19__is_eur_currency",
+        "capa:fn:main.capa:_capa_m21__rate_per_10000",
+        "capa:fn:main.capa:_capa_m21__apply_rate",
+        "capa:fn:main.capa:_capa_m21__is_eur_currency",
         "capa:fn:main.capa:convert_to_eur",
-        "capa:fn:main.capa:_capa_m19__parse_rate",
+        "capa:fn:main.capa:_capa_m21__parse_rate",
         "capa:fn:main.capa:fetch_rate_to_eur",
         "capa:fn:main.capa:conversion_note",
         "capa:fn:main.capa:scan_cmd",
         "capa:fn:main.capa:verdict_label",
         "capa:fn:main.capa:fixed_scan",
-        "capa:fn:main.capa:_capa_m20__verdict_from_output",
+        "capa:fn:main.capa:_capa_m22__verdict_from_output",
         "capa:fn:main.capa:run_scan",
         "capa:fn:main.capa:make_stdio_notifier",
         "capa:fn:main.capa:StdioNotifier::notify",
         "capa:fn:main.capa:announce_decision",
-        "capa:fn:main.capa:parse",
-        "capa:fn:main.capa:_capa_m23__handle_long",
-        "capa:fn:main.capa:_capa_m23__handle_short",
-        "capa:fn:main.capa:_capa_m23__find_flag_long",
-        "capa:fn:main.capa:_capa_m23__find_flag_short",
-        "capa:fn:main.capa:_capa_m23__find_option_long",
-        "capa:fn:main.capa:_capa_m23__find_option_short",
+        "capa:fn:main.capa:cli_parse",
+        "capa:fn:main.capa:_capa_m25__handle_long",
+        "capa:fn:main.capa:_capa_m25__handle_short",
+        "capa:fn:main.capa:_capa_m25__find_flag_long",
+        "capa:fn:main.capa:_capa_m25__find_flag_short",
+        "capa:fn:main.capa:_capa_m25__find_option_long",
+        "capa:fn:main.capa:_capa_m25__find_option_short",
         "capa:fn:main.capa:format_help",
-        "capa:fn:main.capa:_capa_m23__pad_name",
-        "capa:fn:main.capa:_capa_m23__flag_label",
-        "capa:fn:main.capa:_capa_m23__opt_label",
-        "capa:fn:main.capa:_capa_m23__spaces",
+        "capa:fn:main.capa:_capa_m25__pad_name",
+        "capa:fn:main.capa:_capa_m25__flag_label",
+        "capa:fn:main.capa:_capa_m25__opt_label",
+        "capa:fn:main.capa:_capa_m25__spaces",
         "capa:fn:main.capa:build_schema",
-        "capa:fn:main.capa:_capa_m22__config_from_parsed",
+        "capa:fn:main.capa:_capa_m24__config_from_parsed",
         "capa:fn:main.capa:parse_args",
         "capa:fn:main.capa:help_text",
         "capa:fn:main.capa:level_name",
@@ -18339,12 +19075,12 @@
         "capa:fn:main.capa:format_date",
         "capa:fn:main.capa:format_time",
         "capa:fn:main.capa:parse_iso8601",
-        "capa:fn:main.capa:_capa_m26__idiv",
-        "capa:fn:main.capa:_capa_m26__idiv_float",
-        "capa:fn:main.capa:_capa_m26__pad2",
-        "capa:fn:main.capa:_capa_m26__pad4",
-        "capa:fn:main.capa:_capa_m26__parse_int_substring",
-        "capa:fn:main.capa:_capa_m26__expect_char",
+        "capa:fn:main.capa:_capa_m28__idiv",
+        "capa:fn:main.capa:_capa_m28__idiv_float",
+        "capa:fn:main.capa:_capa_m28__pad2",
+        "capa:fn:main.capa:_capa_m28__pad4",
+        "capa:fn:main.capa:_capa_m28__parse_int_substring",
+        "capa:fn:main.capa:_capa_m28__expect_char",
         "capa:fn:main.capa:fingerprint_key",
         "capa:fn:main.capa:ledger_path",
         "capa:fn:main.capa:store_path",
@@ -18714,15 +19450,37 @@
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m14__parse_headed_local",
+      "ref": "capa:fn:main.capa:parse",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m14__split_record"
+        "capa:fn:main.capa:parse_with",
+        "capa:fn:main.capa:comma"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m14__col",
+      "ref": "capa:fn:main.capa:parse_with",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m14__column_index"
+        "capa:fn:main.capa:_capa_m17__at",
+        "capa:fn:main.capa:_capa_m17__scan_quoted"
+      ]
+    },
+    {
+      "ref": "capa:fn:main.capa:_capa_m17__scan_quoted",
+      "dependsOn": [
+        "capa:fn:main.capa:_capa_m17__at"
+      ]
+    },
+    {
+      "ref": "capa:fn:main.capa:csv_parse_headed",
+      "dependsOn": [
+        "capa:fn:main.capa:_capa_m15__sel__parse_headed_with",
+        "capa:fn:main.capa:comma"
+      ]
+    },
+    {
+      "ref": "capa:fn:main.capa:_capa_m15__sel__parse_headed_with",
+      "dependsOn": [
+        "capa:fn:main.capa:parse_with",
+        "capa:fn:main.capa:_capa_m15__sel__from_table"
       ]
     },
     {
@@ -18746,7 +19504,8 @@
     {
       "ref": "capa:fn:main.capa:import_from_text",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m14__parse_headed_local",
+        "capa:fn:main.capa:csv_parse_headed",
+        "capa:fn:main.capa:error_message",
         "capa:fn:main.capa:_capa_m14__row_count",
         "capa:fn:main.capa:_capa_m14__col",
         "capa:fn:main.capa:_capa_m14__line_from_row",
@@ -18770,27 +19529,27 @@
       "ref": "capa:fn:main.capa:record_claim",
       "dependsOn": [
         "capa:builtin:main.capa:Db",
-        "capa:fn:main.capa:_capa_m15__sql_quote"
+        "capa:fn:main.capa:_capa_m18__sql_quote"
       ]
     },
     {
       "ref": "capa:fn:main.capa:record_ledger_line",
       "dependsOn": [
         "capa:builtin:main.capa:Db",
-        "capa:fn:main.capa:_capa_m15__sql_quote"
+        "capa:fn:main.capa:_capa_m18__sql_quote"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m15__row_to_summary",
+      "ref": "capa:fn:main.capa:_capa_m18__row_to_summary",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m15__string_to_int"
+        "capa:fn:main.capa:_capa_m18__string_to_int"
       ]
     },
     {
       "ref": "capa:fn:main.capa:summarize",
       "dependsOn": [
         "capa:builtin:main.capa:Db",
-        "capa:fn:main.capa:_capa_m15__row_to_summary"
+        "capa:fn:main.capa:_capa_m18__row_to_summary"
       ]
     },
     {
@@ -18810,31 +19569,31 @@
     {
       "ref": "capa:fn:main.capa:write_with",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m18__encode_row"
+        "capa:fn:main.capa:_capa_m20__encode_row"
       ]
     },
     {
       "ref": "capa:fn:main.capa:write_row",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m18__encode_row"
+        "capa:fn:main.capa:_capa_m20__encode_row"
       ]
     },
     {
       "ref": "capa:fn:main.capa:write_row_with",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m18__encode_row"
+        "capa:fn:main.capa:_capa_m20__encode_row"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m18__encode_row",
+      "ref": "capa:fn:main.capa:_capa_m20__encode_row",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m18__encode_field"
+        "capa:fn:main.capa:_capa_m20__encode_field"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m18__encode_field",
+      "ref": "capa:fn:main.capa:_capa_m20__encode_field",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m18__needs_quoting"
+        "capa:fn:main.capa:_capa_m20__needs_quoting"
       ]
     },
     {
@@ -18859,7 +19618,7 @@
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m19__apply_rate",
+      "ref": "capa:fn:main.capa:_capa_m21__apply_rate",
       "dependsOn": [
         "capa:fn:main.capa:money"
       ]
@@ -18867,25 +19626,25 @@
     {
       "ref": "capa:fn:main.capa:convert_to_eur",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m19__apply_rate",
-        "capa:fn:main.capa:_capa_m19__rate_per_10000"
+        "capa:fn:main.capa:_capa_m21__apply_rate",
+        "capa:fn:main.capa:_capa_m21__rate_per_10000"
       ]
     },
     {
       "ref": "capa:fn:main.capa:fetch_rate_to_eur",
       "dependsOn": [
         "capa:builtin:main.capa:Net",
-        "capa:fn:main.capa:_capa_m19__is_eur_currency",
+        "capa:fn:main.capa:_capa_m21__is_eur_currency",
         "capa:fn:main.capa:fx_host",
         "capa:fn:main.capa:currency_code",
-        "capa:fn:main.capa:_capa_m19__parse_rate",
-        "capa:fn:main.capa:_capa_m19__apply_rate"
+        "capa:fn:main.capa:_capa_m21__parse_rate",
+        "capa:fn:main.capa:_capa_m21__apply_rate"
       ]
     },
     {
       "ref": "capa:fn:main.capa:conversion_note",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m19__is_eur_currency",
+        "capa:fn:main.capa:_capa_m21__is_eur_currency",
         "capa:fn:main.capa:format"
       ]
     },
@@ -18894,7 +19653,7 @@
       "dependsOn": [
         "capa:builtin:main.capa:Proc",
         "capa:fn:main.capa:scan_cmd",
-        "capa:fn:main.capa:_capa_m20__verdict_from_output"
+        "capa:fn:main.capa:_capa_m22__verdict_from_output"
       ]
     },
     {
@@ -18918,58 +19677,58 @@
       ]
     },
     {
-      "ref": "capa:fn:main.capa:parse",
+      "ref": "capa:fn:main.capa:cli_parse",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__handle_long",
-        "capa:fn:main.capa:_capa_m23__handle_short"
+        "capa:fn:main.capa:_capa_m25__handle_long",
+        "capa:fn:main.capa:_capa_m25__handle_short"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m23__handle_long",
+      "ref": "capa:fn:main.capa:_capa_m25__handle_long",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__find_option_long",
-        "capa:fn:main.capa:_capa_m23__find_flag_long"
+        "capa:fn:main.capa:_capa_m25__find_option_long",
+        "capa:fn:main.capa:_capa_m25__find_flag_long"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m23__handle_short",
+      "ref": "capa:fn:main.capa:_capa_m25__handle_short",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__find_flag_short",
-        "capa:fn:main.capa:_capa_m23__find_option_short"
+        "capa:fn:main.capa:_capa_m25__find_flag_short",
+        "capa:fn:main.capa:_capa_m25__find_option_short"
       ]
     },
     {
       "ref": "capa:fn:main.capa:format_help",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__pad_name",
-        "capa:fn:main.capa:_capa_m23__flag_label",
-        "capa:fn:main.capa:_capa_m23__opt_label"
+        "capa:fn:main.capa:_capa_m25__pad_name",
+        "capa:fn:main.capa:_capa_m25__flag_label",
+        "capa:fn:main.capa:_capa_m25__opt_label"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m23__pad_name",
+      "ref": "capa:fn:main.capa:_capa_m25__pad_name",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__spaces"
+        "capa:fn:main.capa:_capa_m25__spaces"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m23__flag_label",
+      "ref": "capa:fn:main.capa:_capa_m25__flag_label",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__pad_name"
+        "capa:fn:main.capa:_capa_m25__pad_name"
       ]
     },
     {
-      "ref": "capa:fn:main.capa:_capa_m23__opt_label",
+      "ref": "capa:fn:main.capa:_capa_m25__opt_label",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m23__pad_name"
+        "capa:fn:main.capa:_capa_m25__pad_name"
       ]
     },
     {
       "ref": "capa:fn:main.capa:parse_args",
       "dependsOn": [
         "capa:fn:main.capa:build_schema",
-        "capa:fn:main.capa:parse",
-        "capa:fn:main.capa:_capa_m22__config_from_parsed"
+        "capa:fn:main.capa:cli_parse",
+        "capa:fn:main.capa:_capa_m24__config_from_parsed"
       ]
     },
     {
@@ -19030,44 +19789,44 @@
     {
       "ref": "capa:fn:main.capa:to_components",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m26__idiv_float",
-        "capa:fn:main.capa:_capa_m26__idiv"
+        "capa:fn:main.capa:_capa_m28__idiv_float",
+        "capa:fn:main.capa:_capa_m28__idiv"
       ]
     },
     {
       "ref": "capa:fn:main.capa:from_components",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m26__idiv"
+        "capa:fn:main.capa:_capa_m28__idiv"
       ]
     },
     {
       "ref": "capa:fn:main.capa:format_iso8601",
       "dependsOn": [
         "capa:fn:main.capa:to_components",
-        "capa:fn:main.capa:_capa_m26__pad4",
-        "capa:fn:main.capa:_capa_m26__pad2"
+        "capa:fn:main.capa:_capa_m28__pad4",
+        "capa:fn:main.capa:_capa_m28__pad2"
       ]
     },
     {
       "ref": "capa:fn:main.capa:format_date",
       "dependsOn": [
         "capa:fn:main.capa:to_components",
-        "capa:fn:main.capa:_capa_m26__pad4",
-        "capa:fn:main.capa:_capa_m26__pad2"
+        "capa:fn:main.capa:_capa_m28__pad4",
+        "capa:fn:main.capa:_capa_m28__pad2"
       ]
     },
     {
       "ref": "capa:fn:main.capa:format_time",
       "dependsOn": [
         "capa:fn:main.capa:to_components",
-        "capa:fn:main.capa:_capa_m26__pad2"
+        "capa:fn:main.capa:_capa_m28__pad2"
       ]
     },
     {
       "ref": "capa:fn:main.capa:parse_iso8601",
       "dependsOn": [
-        "capa:fn:main.capa:_capa_m26__parse_int_substring",
-        "capa:fn:main.capa:_capa_m26__expect_char",
+        "capa:fn:main.capa:_capa_m28__parse_int_substring",
+        "capa:fn:main.capa:_capa_m28__expect_char",
         "capa:fn:main.capa:from_components"
       ]
     },

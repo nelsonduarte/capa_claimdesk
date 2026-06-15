@@ -30,6 +30,9 @@
 #
 #     capa_cli       v0.1.2   the command-line front end (ArgSchema/parse/
 #                             format_help); zero capabilities, pure parse.
+#                             capa_cli and capa_csv both export a top-level
+#                             `parse`; they coexist via selective import
+#                             (a 1.2.0 feature), hence the `capa` floor.
 #     capa_log       v0.1.2   structured audit logging across the pipeline
 #                             (a Logger capability over Stdio).
 #     capa_datetime  v0.1.2   ISO 8601 / date formatting of a fixed
@@ -53,7 +56,7 @@
 [package]
 name = "capa_claimdesk"
 version = "0.1.0"
-capa = ">=1.1.0"
+capa = ">=1.2.0"
 
 [dependencies.capa_hash]
 git = "https://github.com/nelsonduarte/capa_hash"

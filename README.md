@@ -320,7 +320,7 @@ code, which routes every disclosure through an audited `declassify`.
 | `mask.capa`    | The audited `@secret`-to-public IBAN bridges: `mask_iban` (last-four display suffix) and `iban_fingerprint` (keyed one-way HMAC). Both keep their result `@secret`; the caller declassifies at the sink. Pure (zero capabilities). |
 | `ledger.capa`  | The append-only, HMAC-chained tamper-evident ledger: event serialization, chaining (`chain_from` / `build_chain`), constant-time verification (`verify_chain`, `mac_matches`), and persistence. Pure except `write_ledger`, which holds only `Fs`. |
 | `config.capa`  | **(Phase 4)** Loads the policy thresholds from the environment and builds the rule list. Holds **`Env` only**, attenuated with `restrict_to_keys` to the four `CLAIMDESK_*` config keys. Each numeric value is declassified once (an env value is `@secret` by default; a public config number is not). Fixed defaults keep the demo deterministic with no env var set. |
-| `intake.capa`  | **(Phase 4/5)** Imports a batch of claims from a CSV file, grouping rows into domain `Employee` + `ExpenseLine` values. Holds **`Fs` only** (one attenuated read); parsing is pure. The IBAN column flows into the `@secret` field, so the imported account enters the secret domain at construction. Phase 5 parses the (simple, unquoted) CSV with a small local header reader so it no longer pulls `capa_csv.parse`; see the dogfooding note below. Typed `Result` errors, never a crash. |
+| `intake.capa`  | **(Phase 4/5)** Imports a batch of claims from a CSV file, grouping rows into domain `Employee` + `ExpenseLine` values. Holds **`Fs` only** (one attenuated read); parsing is pure. The IBAN column flows into the `@secret` field, so the imported account enters the secret domain at construction. Parses the CSV through the real `capa_csv` library (`parse_headed` + the typed `HeaderTable` / `CsvError` model), brought in by **selective import** so it coexists with `capa_cli`'s `parse`; see the dogfooding note below. Typed `Result` errors, never a crash. |
 | `store.capa`   | **(Phase 4)** Persists claims, decisions, and ledger lines to a SQLite file and runs a per-verdict rollup query (decoded with `parse_json`). Holds **`Db` only**, attenuated with `restrict_to` to `out/`. Only the masked suffix and the keyed fingerprint are stored, never the IBAN. |
 | `report.capa`  | **(Phase 4)** A `Reporter` trait with one `render` method and three implementations (`TextReporter`, `CsvReporter` via `capa_csv` `write`, `JsonReporter` via `to_json`), chosen by name and dispatched dynamically. **Pure** (no capability): main holds the `Fs` / `Stdio` that emits the rendered String. The CLI's `--reporter` selects the format. |
 | `fx.capa`      | **(Phase 5)** Foreign-exchange conversion of a claim amount into the settlement currency. Holds **`Net` only**, attenuated to the rate host. The default path converts with a fixed integer rate table (pure, deterministic); `fetch_rate_to_eur` does a real `net.get` to the attenuated host under `--live`. |
@@ -612,18 +612,18 @@ program's capability surface.
 
 ### Two compiler gaps found while building Phase 4 (dogfooding)
 
-Both are Wasm-backend codegen gaps: the program is `capa --check`-clean
-and runs correctly under `--run`, but `--wasm --run` fails. Each was
-worked around in **claimdesk** code (not the compiler) and reported
-upstream with a minimal repro:
+Both were Wasm-backend codegen gaps: the program was `capa --check`-clean
+and ran correctly under `--run`, but `--wasm --run` failed. Both were
+reported upstream with a minimal repro; one is now fixed in the compiler,
+the other is still worked around in claimdesk code:
 
-1. **Wildcard for-pattern.** `for _ in 0..n` passes `--check` and runs on
-   Python, but `--wasm` fails with *"CIR lowering does not yet support:
-   for-pattern WildcardPat"*. `intake.capa` binds the loop index name it
-   needs anyway.
+1. **Wildcard for-pattern (FIXED in v1.2.0).** `for _ in 0..n` was
+   `--check`-clean and ran on Python, but `--wasm` failed with *"CIR
+   lowering does not yet support: for-pattern WildcardPat"*. v1.2.0 lowers
+   the wildcard for-pattern, so `for _ in ...` now works on both backends.
 
-2. **Attenuation over a call result.** A capability attenuation whose
-   argument is a function-call result, e.g.
+2. **Attenuation over a call result (STILL OPEN).** A capability
+   attenuation whose argument is a function-call result, e.g.
    `env.restrict_to_keys(config_keys())`, makes `--wasm` emit a
    `local.tee $_alloc_tmp` referencing a local it never declares, so
    `wasm-tools parse` rejects the module (*"unknown local
@@ -737,36 +737,43 @@ zero-capability; `capa_log`'s `Logger` is a user-defined capability over
 
 ### Compiler findings while building Phase 5 (dogfooding)
 
-All are `capa --check`-clean; each was worked around in **claimdesk**
-code (never the compiler) and reported upstream with a minimal repro:
+Building this showcase surfaced several compiler gaps, all reported
+upstream with a minimal repro. Most have since been **fixed in the
+compiler** (the dogfooding paid off); one remains and is still worked
+around in claimdesk code:
 
-1. **Two dependencies cannot both export a top-level name.** `capa_cli`
-   and `capa_csv` both declare a `pub fun parse`. The loader links every
-   imported module's `pub` items into one flat global namespace, and
-   `import x as alias` is parsed but **ignored at link time**, so the two
-   libraries cannot coexist: linking `capa_cli.parser` with
-   `capa_csv.parse` is a hard *"name conflict: 'parse'"*. There is no
-   selective- or qualified-import escape hatch. Workaround: `intake.capa`
-   parses the simple, unquoted claim CSV with a small local header reader
-   (so it no longer pulls `capa_csv.parse`), while `report.capa` keeps
-   `capa_csv`'s `write` / `model` (which export no `parse`). Both
-   libraries stay verified dependencies. The same flat namespace also
-   means **sum-type variant names are global**: a local `Fail` variant
-   collided with the rule engine's `Fail`, so the CLI's outcome type uses
-   `ArgsError`.
+1. **Two dependencies both exporting a top-level name (FIXED in v1.2.0).**
+   `capa_cli` and `capa_csv` both declare a `pub fun parse`. In v1.1.0 the
+   loader linked every imported module's `pub` items into one flat global
+   namespace with no escape hatch, so the two libraries could not coexist:
+   linking `capa_cli.parser` with `capa_csv.parse` was a hard
+   *"name conflict: 'parse'"*. v1.2.0 adds **selective import with
+   renaming** (`import capa_csv.header (parse_headed as csv_parse_headed,
+   HeaderTable)`), which brings in only the listed `pub` symbols under
+   explicit names and keeps the rest hidden. `intake.capa` now parses the
+   batch CSV through the **real `capa_csv`** (`parse_headed` + the typed
+   `HeaderTable` / `CsvError` model), while `cli.capa` brings in
+   `capa_cli`'s `parse` as `cli_parse`; the two registry dependencies
+   coexist in one program with the collision resolved at the import line.
+   (The same flat namespace still means **sum-type variant names are
+   global**: a local `Fail` variant once collided with the rule engine's
+   `Fail`, so the CLI's outcome type uses `ArgsError`; variant renaming in
+   a selective import is not yet supported.)
 
-2. **Wasm attenuation requires a literal-string argument.** On the Wasm
-   backend, `net.restrict_to(host)` / `proc.restrict_to(cmd)` with a
-   *let-bound* host or command name are rejected at emit time with
+2. **Wildcard for-pattern on Wasm (FIXED in v1.2.0).** `for _ in 0..n`
+   was `--check`-clean and ran on Python but failed on `--wasm` with
+   *"CIR lowering does not yet support: for-pattern WildcardPat"*. v1.2.0
+   lowers it; the wildcard form is available on both backends now.
+
+3. **Wasm attenuation requires a literal-string argument (STILL OPEN).**
+   On the Wasm backend, `net.restrict_to(host)` / `proc.restrict_to(cmd)`
+   with a *let-bound* host or command name are rejected at emit time with
    *"--wasm: Wasm attenuation check requires a literal-string arg"*. The
    string-prefix attenuations therefore take an inline string literal at
    the call site (`net.restrict_to("api.frankfurter.app")`); a helper
    names the same value for display. (A `Float` argument to
-   `clock.restrict_to_after` is unaffected.)
-
-3. The **Phase 4** Wasm gaps still apply and are still worked around: the
-   wildcard for-pattern (`for _ in 0..n`) and attenuation over a function
-   **call result** (both above).
+   `clock.restrict_to_after` is unaffected.) This is the one gap still
+   worked around in claimdesk.
 
 ## Phase 7: governance and SBOM by construction
 
@@ -811,10 +818,11 @@ CAPA_PATH=.. capa --wasm --run governance/audit.capa   # identical PASS
 
 It is **deliberately standalone**: it imports only `capa_sbom` (plus the
 `Fs` / `Stdio` it needs), never a `capa_claimdesk` module. Capa links all
-`pub` items into one flat global namespace (the Phase 5 finding above),
-so a program pulling in both `capa_sbom` and the full claimdesk module
-graph could hit a name clash. Reading only the JSON the compiler emitted
-sidesteps that: the auditor never sees the claimdesk source.
+`pub` items into one flat global namespace, so a program pulling in both
+`capa_sbom` and the full claimdesk module graph could hit a name clash
+(now resolvable with the v1.2.0 selective import, the Phase 5 finding
+above). Reading only the JSON the compiler emitted keeps the auditor
+fully decoupled: it never sees the claimdesk source at all.
 
 ### What the showcase demonstrates
 

@@ -1,5 +1,5 @@
 {
-  "capa_version": "1.1.0",
+  "capa_version": "1.2.0",
   "schema_version": 1,
   "filename": "main.capa",
   "user_defined_capabilities": [
@@ -7137,31 +7137,9 @@
       "attributes": [],
       "calls": [
         {
-          "kind": "method",
-          "callee": "rules.push",
-          "pos": "104:5",
-          "args": [
-            "CurrencyConsistencyRule { expected: EUR }"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "method",
-          "callee": "rules.push",
-          "pos": "105:5",
-          "args": [
-            "TotalLimitRule { limit: money(cfg.total_limit_cents, EUR), warn_margin: cfg.t..."
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
           "kind": "fn",
           "callee": "money",
-          "pos": "105:40",
+          "pos": "108:33",
           "args": [
             "cfg.total_limit_cents",
             "EUR"
@@ -7172,20 +7150,9 @@
           ]
         },
         {
-          "kind": "method",
-          "callee": "rules.push",
-          "pos": "106:5",
-          "args": [
-            "CategoryLimitRule { category: Meals, limit: money(cfg.meals_limit_cents, EUR) }"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
           "kind": "fn",
           "callee": "money",
-          "pos": "106:60",
+          "pos": "109:53",
           "args": [
             "cfg.meals_limit_cents",
             "EUR"
@@ -7196,37 +7163,15 @@
           ]
         },
         {
-          "kind": "method",
-          "callee": "rules.push",
-          "pos": "107:5",
-          "args": [
-            "ReceiptRequiredRule { threshold: money(cfg.receipt_threshold_cents, EUR) }"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
           "kind": "fn",
           "callee": "money",
-          "pos": "107:49",
+          "pos": "110:42",
           "args": [
             "cfg.receipt_threshold_cents",
             "EUR"
           ],
           "args_flow": [
             null,
-            null
-          ]
-        },
-        {
-          "kind": "method",
-          "callee": "rules.push",
-          "pos": "108:5",
-          "args": [
-            "DuplicateLineRule {  }"
-          ],
-          "args_flow": [
             null
           ]
         }
@@ -7239,7 +7184,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "config.capa:114:5",
+      "pos": "config.capa:118:5",
       "is_pub": true,
       "doc": null,
       "params": [
@@ -7278,7 +7223,7 @@
         {
           "kind": "fn",
           "callee": "format",
-          "pos": "115:17",
+          "pos": "119:17",
           "args": [
             "money(cfg.total_limit_cents, EUR)"
           ],
@@ -7289,7 +7234,7 @@
         {
           "kind": "fn",
           "callee": "money",
-          "pos": "115:24",
+          "pos": "119:24",
           "args": [
             "cfg.total_limit_cents",
             "EUR"
@@ -7302,7 +7247,7 @@
         {
           "kind": "fn",
           "callee": "format",
-          "pos": "116:17",
+          "pos": "120:17",
           "args": [
             "money(cfg.meals_limit_cents, EUR)"
           ],
@@ -7313,7 +7258,7 @@
         {
           "kind": "fn",
           "callee": "money",
-          "pos": "116:24",
+          "pos": "120:24",
           "args": [
             "cfg.meals_limit_cents",
             "EUR"
@@ -7326,7 +7271,7 @@
         {
           "kind": "fn",
           "callee": "format",
-          "pos": "117:19",
+          "pos": "121:19",
           "args": [
             "money(cfg.receipt_threshold_cents, EUR)"
           ],
@@ -7337,7 +7282,7 @@
         {
           "kind": "fn",
           "callee": "money",
-          "pos": "117:26",
+          "pos": "121:26",
           "args": [
             "cfg.receipt_threshold_cents",
             "EUR"
@@ -7351,18 +7296,134 @@
       "declassifications": []
     },
     {
-      "name": "intake_error_message",
-      "source_name": "intake_error_message",
+      "name": "comma",
+      "source_name": "comma",
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "intake.capa:52:5",
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:31:5",
       "is_pub": true,
-      "doc": null,
+      "doc": "The default RFC 4180 dialect: comma-delimited.",
+      "params": [],
+      "return_type": "Dialect",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [],
+      "declassifications": []
+    },
+    {
+      "name": "tab",
+      "source_name": "tab",
+      "container": null,
+      "source_container": null,
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:35:5",
+      "is_pub": true,
+      "doc": "Tab-separated values.",
+      "params": [],
+      "return_type": "Dialect",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [],
+      "declassifications": []
+    },
+    {
+      "name": "with_delimiter",
+      "source_name": "with_delimiter",
+      "container": null,
+      "source_container": null,
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:42:5",
+      "is_pub": true,
+      "doc": "A dialect with an arbitrary single-character delimiter. A\ndelimiter that is not exactly one character, or that is the\nquote character itself, is a programming error the parser\nrejects with `BadDialect` rather than misbehaving silently.",
+      "params": [
+        {
+          "name": "delim",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Dialect",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [],
+      "declassifications": []
+    },
+    {
+      "name": "error_message",
+      "source_name": "error_message",
+      "container": null,
+      "source_container": null,
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:88:5",
+      "is_pub": true,
+      "doc": "A human-readable, backend-identical rendering of an error.\nPositions are 1-based record numbers, the unit an operator\nreasons about.",
       "params": [
         {
           "name": "e",
-          "type": "IntakeError",
+          "type": "CsvError",
           "consuming": false,
           "is_capability": false,
           "is_linear": false
@@ -7395,24 +7456,31 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m14__split_record",
-      "source_name": "split_record",
+      "name": "_capa_m17__at",
+      "source_name": "at",
       "container": null,
       "source_container": null,
-      "source_module_index": 14,
-      "pos": "intake.capa:78:1",
+      "source_module_index": 17,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:34:1",
       "is_pub": false,
       "doc": null,
       "params": [
         {
-          "name": "line",
+          "name": "s",
           "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "i",
+          "type": "Int",
           "consuming": false,
           "is_capability": false,
           "is_linear": false
         }
       ],
-      "return_type": "List<String>",
+      "return_type": "String",
       "declared_capabilities": [],
       "transitively_reachable_capabilities": [],
       "provably_excluded_capabilities": [
@@ -7438,10 +7506,10 @@
       "calls": [
         {
           "kind": "method",
-          "callee": "line.split",
-          "pos": "79:12",
+          "callee": "s.char_at",
+          "pos": "35:18",
           "args": [
-            "\",\""
+            "i"
           ],
           "args_flow": [
             null
@@ -7451,18 +7519,688 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m14__parse_headed_local",
-      "source_name": "parse_headed_local",
+      "name": "parse",
+      "source_name": "parse",
       "container": null,
       "source_container": null,
-      "source_module_index": 14,
-      "pos": "intake.capa:83:1",
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:40:5",
+      "is_pub": true,
+      "doc": "Parse CSV text with the default comma dialect.",
+      "params": [
+        {
+          "name": "text",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Result<Table, CsvError>",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "fn",
+          "callee": "parse_with",
+          "pos": "41:12",
+          "args": [
+            "text",
+            "comma()"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "comma",
+          "pos": "41:29",
+          "args": [],
+          "args_flow": []
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "parse_with",
+      "source_name": "parse_with",
+      "container": null,
+      "source_container": null,
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:44:5",
+      "is_pub": true,
+      "doc": "Parse CSV text with an explicit dialect.",
+      "params": [
+        {
+          "name": "text",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "dialect",
+          "type": "Dialect",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Result<Table, CsvError>",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "method",
+          "callee": "delim.length",
+          "pos": "46:8",
+          "args": [],
+          "args_flow": []
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "47:16",
+          "args": [
+            "BadDialect(\"delimiter must be exactly one character, got '${...}'\")"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "BadDialect",
+          "pos": "47:20",
+          "args": [
+            "\"delimiter must be exactly one character, got '${...}'\""
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "49:16",
+          "args": [
+            "BadDialect(\"delimiter cannot be the quote character\")"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "BadDialect",
+          "pos": "49:20",
+          "args": [
+            "\"delimiter cannot be the quote character\""
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "51:16",
+          "args": [
+            "BadDialect(\"delimiter cannot be a newline character\")"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "BadDialect",
+          "pos": "51:20",
+          "args": [
+            "\"delimiter cannot be a newline character\""
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "text.length",
+          "pos": "54:13",
+          "args": [],
+          "args_flow": []
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m17__at",
+          "pos": "64:17",
+          "args": [
+            "text",
+            "i"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "field.is_empty",
+          "pos": "69:20",
+          "args": [],
+          "args_flow": []
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "70:24",
+          "args": [
+            "UnexpectedChar(record_no)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "UnexpectedChar",
+          "pos": "70:28",
+          "args": [
+            "record_no"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m17__scan_quoted",
+          "pos": "71:23",
+          "args": [
+            "text",
+            "i + 1",
+            "record_no"
+          ],
+          "args_flow": [
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "73:34",
+          "args": [
+            "e"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m17__at",
+          "pos": "81:37",
+          "args": [
+            "text",
+            "i"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "83:36",
+          "args": [
+            "UnexpectedChar(record_no)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "UnexpectedChar",
+          "pos": "83:40",
+          "args": [
+            "record_no"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "fields.push",
+          "pos": "87:13",
+          "args": [
+            "field"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m17__at",
+          "pos": "96:40",
+          "args": [
+            "text",
+            "j"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "field.is_empty",
+          "pos": "99:37",
+          "args": [],
+          "args_flow": []
+        },
+        {
+          "kind": "method",
+          "callee": "fields.push",
+          "pos": "100:17",
+          "args": [
+            "field"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "rows.push",
+          "pos": "101:17",
+          "args": [
+            "Row { fields: fields }"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "field.is_empty",
+          "pos": "115:29",
+          "args": [],
+          "args_flow": []
+        },
+        {
+          "kind": "method",
+          "callee": "fields.push",
+          "pos": "116:9",
+          "args": [
+            "field"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "rows.push",
+          "pos": "117:9",
+          "args": [
+            "Row { fields: fields }"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Ok",
+          "pos": "119:12",
+          "args": [
+            "Table { rows: rows }"
+          ],
+          "args_flow": [
+            null
+          ]
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "_capa_m17__scan_quoted",
+      "source_name": "scan_quoted",
+      "container": null,
+      "source_container": null,
+      "source_module_index": 17,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\parse.capa:131:1",
       "is_pub": false,
       "doc": null,
       "params": [
         {
           "name": "text",
           "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "start",
+          "type": "Int",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "record_no",
+          "type": "Int",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Result<Quoted, CsvError>",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "method",
+          "callee": "text.length",
+          "pos": "132:13",
+          "args": [],
+          "args_flow": []
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m17__at",
+          "pos": "136:17",
+          "args": [
+            "text",
+            "i"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m17__at",
+          "pos": "140:26",
+          "args": [
+            "text",
+            "j"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Ok",
+          "pos": "145:20",
+          "args": [
+            "_capa_m17__Quoted { value: value, next: i + 1 }"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "148:12",
+          "args": [
+            "UnclosedQuote(record_no)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "UnclosedQuote",
+          "pos": "148:16",
+          "args": [
+            "record_no"
+          ],
+          "args_flow": [
+            null
+          ]
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "csv_parse_headed",
+      "source_name": "csv_parse_headed",
+      "container": null,
+      "source_container": null,
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:24:5",
+      "is_pub": true,
+      "doc": "Parse CSV text and take its first record as the header.\nEmpty input yields an empty header and no rows.",
+      "params": [
+        {
+          "name": "text",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Result<HeaderTable, CsvError>",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "fn",
+          "callee": "_capa_m15__sel__parse_headed_with",
+          "pos": "25:12",
+          "args": [
+            "text",
+            "comma()"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "comma",
+          "pos": "25:36",
+          "args": [],
+          "args_flow": []
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "_capa_m15__sel__parse_headed_with",
+      "source_name": "sel__parse_headed_with",
+      "container": null,
+      "source_container": null,
+      "source_module_index": 15,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:28:5",
+      "is_pub": true,
+      "doc": "Parse with an explicit dialect, first record as the header.",
+      "params": [
+        {
+          "name": "text",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "dialect",
+          "type": "Dialect",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Result<HeaderTable, CsvError>",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "fn",
+          "callee": "parse_with",
+          "pos": "29:17",
+          "args": [
+            "text",
+            "dialect"
+          ],
+          "args_flow": [
+            null,
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Ok",
+          "pos": "30:12",
+          "args": [
+            "_capa_m15__sel__from_table(table)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "_capa_m15__sel__from_table",
+          "pos": "30:15",
+          "args": [
+            "table"
+          ],
+          "args_flow": [
+            null
+          ]
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "_capa_m15__sel__from_table",
+      "source_name": "sel__from_table",
+      "container": null,
+      "source_container": null,
+      "source_module_index": 15,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:34:5",
+      "is_pub": true,
+      "doc": "Build a header view from an already-parsed Table. The first\nrecord becomes the columns; the rest become the data rows.",
+      "params": [
+        {
+          "name": "table",
+          "type": "Table",
           "consuming": false,
           "is_capability": false,
           "is_linear": false
@@ -7494,61 +8232,10 @@
       "calls": [
         {
           "kind": "method",
-          "callee": "text.split",
-          "pos": "84:15",
+          "callee": "data.push",
+          "pos": "43:13",
           "args": [
-            "\"\\n\""
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "method",
-          "callee": "ln.trim",
-          "pos": "87:23",
-          "args": [],
-          "args_flow": []
-        },
-        {
-          "kind": "method",
-          "callee": "lines.push",
-          "pos": "89:13",
-          "args": [
-            "trimmed"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "fn",
-          "callee": "_capa_m14__split_record",
-          "pos": "95:23",
-          "args": [
-            "ln"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "method",
-          "callee": "rows.push",
-          "pos": "98:13",
-          "args": [
-            "_capa_m14__split_record(ln)"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "fn",
-          "callee": "_capa_m14__split_record",
-          "pos": "98:23",
-          "args": [
-            "ln"
+            "row"
           ],
           "args_flow": [
             null
@@ -7558,18 +8245,70 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m14__column_index",
-      "source_name": "column_index",
-      "container": null,
-      "source_container": null,
-      "source_module_index": 14,
-      "pos": "intake.capa:102:1",
-      "is_pub": false,
-      "doc": null,
+      "name": "length",
+      "source_name": "length",
+      "container": "HeaderTable",
+      "source_container": "HeaderTable",
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:48:9",
+      "is_pub": true,
+      "doc": "The number of data records (header excluded).",
       "params": [
         {
-          "name": "table",
-          "type": "HeaderTable",
+          "name": "self",
+          "type": "Self",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Int",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "method",
+          "callee": "self.rows.length",
+          "pos": "49:16",
+          "args": [],
+          "args_flow": []
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "column_index",
+      "source_name": "column_index",
+      "container": "HeaderTable",
+      "source_container": "HeaderTable",
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:52:9",
+      "is_pub": true,
+      "doc": "The zero-based index of a column, or None if absent.",
+      "params": [
+        {
+          "name": "self",
+          "type": "Self",
           "consuming": false,
           "is_capability": false,
           "is_linear": false
@@ -7609,7 +8348,7 @@
         {
           "kind": "fn",
           "callee": "Some",
-          "pos": "106:20",
+          "pos": "56:24",
           "args": [
             "i"
           ],
@@ -7621,12 +8360,288 @@
       "declassifications": []
     },
     {
+      "name": "has_column",
+      "source_name": "has_column",
+      "container": "HeaderTable",
+      "source_container": "HeaderTable",
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:61:9",
+      "is_pub": true,
+      "doc": "Whether the header declares a column by this name.",
+      "params": [
+        {
+          "name": "self",
+          "type": "Self",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Bool",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "method",
+          "callee": "self.column_index",
+          "pos": "62:22",
+          "args": [
+            "name"
+          ],
+          "args_flow": [
+            null
+          ]
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "get",
+      "source_name": "get",
+      "container": "HeaderTable",
+      "source_container": "HeaderTable",
+      "source_module_index": null,
+      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\header.capa:72:9",
+      "is_pub": true,
+      "doc": "The value of `column` in data record `row_index`\n(zero-based, header excluded). Errors with `NoSuchColumn`\nwhen the header has no such column, with `NoSuchRow` when\nthere is no data record at `row_index`, and with `ShortRow`\nwhen the record exists but has fewer fields than the\ncolumn's index.",
+      "params": [
+        {
+          "name": "self",
+          "type": "Self",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "row_index",
+          "type": "Int",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        },
+        {
+          "name": "column",
+          "type": "String",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "Result<String, CsvError>",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [
+        {
+          "kind": "method",
+          "callee": "self.column_index",
+          "pos": "73:25",
+          "args": [
+            "column"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "75:31",
+          "args": [
+            "NoSuchColumn(column)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "NoSuchColumn",
+          "pos": "75:35",
+          "args": [
+            "column"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "self.rows.get",
+          "pos": "76:25",
+          "args": [
+            "row_index"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "78:31",
+          "args": [
+            "NoSuchRow(row_index)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "NoSuchRow",
+          "pos": "78:35",
+          "args": [
+            "row_index"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "method",
+          "callee": "row.fields.get",
+          "pos": "79:22",
+          "args": [
+            "idx"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Ok",
+          "pos": "80:24",
+          "args": [
+            "v"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "Err",
+          "pos": "81:24",
+          "args": [
+            "ShortRow(column)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "ShortRow",
+          "pos": "81:28",
+          "args": [
+            "column"
+          ],
+          "args_flow": [
+            null
+          ]
+        }
+      ],
+      "declassifications": []
+    },
+    {
+      "name": "intake_error_message",
+      "source_name": "intake_error_message",
+      "container": null,
+      "source_container": null,
+      "source_module_index": null,
+      "pos": "intake.capa:56:5",
+      "is_pub": true,
+      "doc": null,
+      "params": [
+        {
+          "name": "e",
+          "type": "IntakeError",
+          "consuming": false,
+          "is_capability": false,
+          "is_linear": false
+        }
+      ],
+      "return_type": "String",
+      "declared_capabilities": [],
+      "transitively_reachable_capabilities": [],
+      "provably_excluded_capabilities": [
+        "Clock",
+        "Db",
+        "Env",
+        "Fs",
+        "Logger",
+        "Net",
+        "Notifier",
+        "Proc",
+        "Random",
+        "Stdio",
+        "Unsafe"
+      ],
+      "linear_obligations": {
+        "consumes": [],
+        "produces_linear": false
+      },
+      "has_unsafe": false,
+      "constant_time": false,
+      "attributes": [],
+      "calls": [],
+      "declassifications": []
+    },
+    {
       "name": "_capa_m14__row_count",
       "source_name": "row_count",
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:111:1",
+      "pos": "intake.capa:73:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -7664,8 +8679,8 @@
       "calls": [
         {
           "kind": "method",
-          "callee": "table.rows.length",
-          "pos": "112:12",
+          "callee": "table.length",
+          "pos": "74:12",
           "args": [],
           "args_flow": []
         }
@@ -7678,7 +8693,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:116:1",
+      "pos": "intake.capa:78:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -7717,7 +8732,7 @@
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "118:18",
+          "pos": "80:18",
           "args": [
             "EUR"
           ],
@@ -7728,7 +8743,7 @@
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "119:18",
+          "pos": "81:18",
           "args": [
             "USD"
           ],
@@ -7739,7 +8754,7 @@
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "120:18",
+          "pos": "82:18",
           "args": [
             "GBP"
           ],
@@ -7750,7 +8765,7 @@
         {
           "kind": "fn",
           "callee": "Err",
-          "pos": "121:18",
+          "pos": "83:18",
           "args": [
             "BadCurrency(code)"
           ],
@@ -7761,7 +8776,7 @@
         {
           "kind": "fn",
           "callee": "BadCurrency",
-          "pos": "121:22",
+          "pos": "83:22",
           "args": [
             "code"
           ],
@@ -7778,7 +8793,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:125:1",
+      "pos": "intake.capa:87:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -7817,7 +8832,7 @@
         {
           "kind": "fn",
           "callee": "parse_int",
-          "pos": "126:18",
+          "pos": "88:18",
           "args": [
             "s.trim()"
           ],
@@ -7828,14 +8843,14 @@
         {
           "kind": "method",
           "callee": "s.trim",
-          "pos": "126:28",
+          "pos": "88:28",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "127:20",
+          "pos": "89:20",
           "args": [
             "n"
           ],
@@ -7846,7 +8861,7 @@
         {
           "kind": "fn",
           "callee": "Err",
-          "pos": "128:20",
+          "pos": "90:20",
           "args": [
             "BadAmount(s)"
           ],
@@ -7857,7 +8872,7 @@
         {
           "kind": "fn",
           "callee": "BadAmount",
-          "pos": "128:24",
+          "pos": "90:24",
           "args": [
             "s"
           ],
@@ -7874,7 +8889,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:132:1",
+      "pos": "intake.capa:94:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -7913,7 +8928,7 @@
         {
           "kind": "method",
           "callee": "name.trim",
-          "pos": "133:18",
+          "pos": "95:18",
           "args": [],
           "args_flow": []
         }
@@ -7926,7 +8941,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:142:1",
+      "pos": "intake.capa:105:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -7977,11 +8992,11 @@
       "attributes": [],
       "calls": [
         {
-          "kind": "fn",
-          "callee": "_capa_m14__column_index",
-          "pos": "143:21",
+          "kind": "method",
+          "callee": "table.get",
+          "pos": "106:18",
           "args": [
-            "table",
+            "row",
             "name"
           ],
           "args_flow": [
@@ -7991,74 +9006,8 @@
         },
         {
           "kind": "fn",
-          "callee": "Err",
-          "pos": "145:27",
-          "args": [
-            "NoColumn(name)"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "fn",
-          "callee": "NoColumn",
-          "pos": "145:31",
-          "args": [
-            "name"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "method",
-          "callee": "table.rows.get",
-          "pos": "146:24",
-          "args": [
-            "row"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "fn",
-          "callee": "Err",
-          "pos": "148:27",
-          "args": [
-            "NoColumn(name)"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "fn",
-          "callee": "NoColumn",
-          "pos": "148:31",
-          "args": [
-            "name"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "method",
-          "callee": "fields.get",
-          "pos": "149:18",
-          "args": [
-            "idx"
-          ],
-          "args_flow": [
-            null
-          ]
-        },
-        {
-          "kind": "fn",
           "callee": "Ok",
-          "pos": "150:20",
+          "pos": "107:19",
           "args": [
             "v.trim()"
           ],
@@ -8069,14 +9018,14 @@
         {
           "kind": "method",
           "callee": "v.trim",
-          "pos": "150:23",
+          "pos": "107:22",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
           "callee": "Err",
-          "pos": "151:20",
+          "pos": "108:19",
           "args": [
             "NoColumn(name)"
           ],
@@ -8087,7 +9036,7 @@
         {
           "kind": "fn",
           "callee": "NoColumn",
-          "pos": "151:24",
+          "pos": "108:23",
           "args": [
             "name"
           ],
@@ -8104,7 +9053,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:154:1",
+      "pos": "intake.capa:111:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -8150,7 +9099,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "155:23",
+          "pos": "112:23",
           "args": [
             "table",
             "row",
@@ -8165,7 +9114,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__parse_category",
-          "pos": "156:20",
+          "pos": "113:20",
           "args": [
             "_capa_m14__col(table, row, \"category\")?"
           ],
@@ -8176,7 +9125,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "156:35",
+          "pos": "113:35",
           "args": [
             "table",
             "row",
@@ -8191,7 +9140,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__parse_amount_part",
-          "pos": "157:17",
+          "pos": "114:17",
           "args": [
             "_capa_m14__col(table, row, \"amount_major\")?"
           ],
@@ -8202,7 +9151,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "157:35",
+          "pos": "114:35",
           "args": [
             "table",
             "row",
@@ -8217,7 +9166,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__parse_amount_part",
-          "pos": "158:17",
+          "pos": "115:17",
           "args": [
             "_capa_m14__col(table, row, \"amount_minor\")?"
           ],
@@ -8228,7 +9177,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "158:35",
+          "pos": "115:35",
           "args": [
             "table",
             "row",
@@ -8243,7 +9192,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__parse_currency",
-          "pos": "159:20",
+          "pos": "116:20",
           "args": [
             "_capa_m14__col(table, row, \"currency\")?"
           ],
@@ -8254,7 +9203,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "159:35",
+          "pos": "116:35",
           "args": [
             "table",
             "row",
@@ -8269,7 +9218,7 @@
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "160:12",
+          "pos": "117:12",
           "args": [
             "expense_line(description, category, money(major * 100 + minor, currency))"
           ],
@@ -8280,7 +9229,7 @@
         {
           "kind": "fn",
           "callee": "expense_line",
-          "pos": "160:15",
+          "pos": "117:15",
           "args": [
             "description",
             "category",
@@ -8295,7 +9244,7 @@
         {
           "kind": "fn",
           "callee": "money",
-          "pos": "160:51",
+          "pos": "117:51",
           "args": [
             "major * 100 + minor",
             "currency"
@@ -8314,7 +9263,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": 14,
-      "pos": "intake.capa:166:1",
+      "pos": "intake.capa:123:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -8360,7 +9309,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "167:14",
+          "pos": "124:14",
           "args": [
             "table",
             "row",
@@ -8375,7 +9324,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "168:16",
+          "pos": "125:16",
           "args": [
             "table",
             "row",
@@ -8390,7 +9339,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "169:22",
+          "pos": "126:22",
           "args": [
             "table",
             "row",
@@ -8405,7 +9354,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "170:16",
+          "pos": "127:16",
           "args": [
             "table",
             "row",
@@ -8420,7 +9369,7 @@
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "171:12",
+          "pos": "128:12",
           "args": [
             "employee(id, name, department, iban)"
           ],
@@ -8431,7 +9380,7 @@
         {
           "kind": "fn",
           "callee": "employee",
-          "pos": "171:15",
+          "pos": "128:15",
           "args": [
             "id",
             "name",
@@ -8454,7 +9403,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "intake.capa:177:5",
+      "pos": "intake.capa:135:5",
       "is_pub": true,
       "doc": null,
       "params": [
@@ -8492,8 +9441,8 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m14__parse_headed_local",
-          "pos": "178:17",
+          "callee": "csv_parse_headed",
+          "pos": "136:23",
           "args": [
             "text"
           ],
@@ -8503,8 +9452,41 @@
         },
         {
           "kind": "fn",
+          "callee": "Err",
+          "pos": "138:26",
+          "args": [
+            "BadCsv(error_message(e))"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "BadCsv",
+          "pos": "138:30",
+          "args": [
+            "error_message(e)"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
+          "callee": "error_message",
+          "pos": "138:37",
+          "args": [
+            "e"
+          ],
+          "args_flow": [
+            null
+          ]
+        },
+        {
+          "kind": "fn",
           "callee": "_capa_m14__row_count",
-          "pos": "179:13",
+          "pos": "139:13",
           "args": [
             "table"
           ],
@@ -8515,7 +9497,7 @@
         {
           "kind": "fn",
           "callee": "Err",
-          "pos": "181:16",
+          "pos": "141:16",
           "args": [
             "NoRows"
           ],
@@ -8526,7 +9508,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__col",
-          "pos": "188:24",
+          "pos": "145:24",
           "args": [
             "table",
             "i",
@@ -8541,7 +9523,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__line_from_row",
-          "pos": "189:20",
+          "pos": "146:20",
           "args": [
             "table",
             "i"
@@ -8554,7 +9536,7 @@
         {
           "kind": "method",
           "callee": "claims.find",
-          "pos": "194:23",
+          "pos": "151:23",
           "args": [
             "fun(...) => ..."
           ],
@@ -8565,7 +9547,7 @@
         {
           "kind": "method",
           "callee": "merged.push",
-          "pos": "202:29",
+          "pos": "159:29",
           "args": [
             "l"
           ],
@@ -8576,7 +9558,7 @@
         {
           "kind": "method",
           "callee": "merged.push",
-          "pos": "203:25",
+          "pos": "160:25",
           "args": [
             "line"
           ],
@@ -8587,7 +9569,7 @@
         {
           "kind": "method",
           "callee": "rebuilt.push",
-          "pos": "204:25",
+          "pos": "161:25",
           "args": [
             "ImportedClaim { id: c.id, employee: c.employee, lines: merged }"
           ],
@@ -8598,7 +9580,7 @@
         {
           "kind": "method",
           "callee": "rebuilt.push",
-          "pos": "206:25",
+          "pos": "163:25",
           "args": [
             "c"
           ],
@@ -8609,7 +9591,7 @@
         {
           "kind": "fn",
           "callee": "_capa_m14__employee_from_row",
-          "pos": "209:27",
+          "pos": "166:27",
           "args": [
             "table",
             "i"
@@ -8622,7 +9604,7 @@
         {
           "kind": "method",
           "callee": "first.push",
-          "pos": "211:17",
+          "pos": "168:17",
           "args": [
             "line"
           ],
@@ -8633,7 +9615,7 @@
         {
           "kind": "method",
           "callee": "claims.push",
-          "pos": "212:17",
+          "pos": "169:17",
           "args": [
             "ImportedClaim { id: claim_id, employee: emp, lines: first }"
           ],
@@ -8644,7 +9626,7 @@
         {
           "kind": "fn",
           "callee": "Ok",
-          "pos": "213:12",
+          "pos": "170:12",
           "args": [
             "claims"
           ],
@@ -8661,7 +9643,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "intake.capa:218:5",
+      "pos": "intake.capa:175:5",
       "is_pub": true,
       "doc": null,
       "params": [
@@ -8710,7 +9692,7 @@
         {
           "kind": "method",
           "callee": "fs.read",
-          "pos": "219:22",
+          "pos": "176:22",
           "args": [
             "path"
           ],
@@ -8721,7 +9703,7 @@
         {
           "kind": "fn",
           "callee": "Err",
-          "pos": "221:26",
+          "pos": "178:26",
           "args": [
             "NoRows"
           ],
@@ -8732,7 +9714,7 @@
         {
           "kind": "fn",
           "callee": "import_from_text",
-          "pos": "222:12",
+          "pos": "179:12",
           "args": [
             "text"
           ],
@@ -8744,11 +9726,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m15__sql_quote",
+      "name": "_capa_m18__sql_quote",
       "source_name": "sql_quote",
       "container": null,
       "source_container": null,
-      "source_module_index": 15,
+      "source_module_index": 18,
       "pos": "store.capa:62:1",
       "is_pub": false,
       "doc": null,
@@ -8930,7 +9912,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "75:55",
           "args": [
             "rec.claim_id"
@@ -8941,7 +9923,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "75:88",
           "args": [
             "rec.employee_fp"
@@ -8952,7 +9934,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "75:124",
           "args": [
             "rec.payee_masked"
@@ -8963,7 +9945,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "75:192",
           "args": [
             "rec.currency"
@@ -8974,7 +9956,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "76:61",
           "args": [
             "rec.claim_id"
@@ -8985,7 +9967,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "76:94",
           "args": [
             "rec.verdict"
@@ -8996,7 +9978,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "76:157",
           "args": [
             "rec.currency"
@@ -9007,7 +9989,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "76:190",
           "args": [
             "rec.reason"
@@ -9107,7 +10089,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "82:66",
           "args": [
             "claim_id"
@@ -9118,7 +10100,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__sql_quote",
+          "callee": "_capa_m18__sql_quote",
           "pos": "82:95",
           "args": [
             "line"
@@ -9144,11 +10126,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m15__row_to_summary",
+      "name": "_capa_m18__row_to_summary",
       "source_name": "row_to_summary",
       "container": null,
       "source_container": null,
-      "source_module_index": 15,
+      "source_module_index": 18,
       "pos": "store.capa:88:1",
       "is_pub": false,
       "doc": null,
@@ -9223,7 +10205,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__string_to_int",
+          "callee": "_capa_m18__string_to_int",
           "pos": "98:20",
           "args": [
             "j"
@@ -9245,7 +10227,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__string_to_int",
+          "callee": "_capa_m18__string_to_int",
           "pos": "101:20",
           "args": [
             "j"
@@ -9269,11 +10251,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m15__string_to_int",
+      "name": "_capa_m18__string_to_int",
       "source_name": "string_to_int",
       "container": null,
       "source_container": null,
-      "source_module_index": 15,
+      "source_module_index": 18,
       "pos": "store.capa:108:1",
       "is_pub": false,
       "doc": null,
@@ -9438,7 +10420,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m15__row_to_summary",
+          "callee": "_capa_m18__row_to_summary",
           "pos": "130:15",
           "args": [
             "row"
@@ -9539,166 +10521,6 @@
           ]
         }
       ],
-      "declassifications": []
-    },
-    {
-      "name": "comma",
-      "source_name": "comma",
-      "container": null,
-      "source_container": null,
-      "source_module_index": null,
-      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:31:5",
-      "is_pub": true,
-      "doc": "The default RFC 4180 dialect: comma-delimited.",
-      "params": [],
-      "return_type": "Dialect",
-      "declared_capabilities": [],
-      "transitively_reachable_capabilities": [],
-      "provably_excluded_capabilities": [
-        "Clock",
-        "Db",
-        "Env",
-        "Fs",
-        "Logger",
-        "Net",
-        "Notifier",
-        "Proc",
-        "Random",
-        "Stdio",
-        "Unsafe"
-      ],
-      "linear_obligations": {
-        "consumes": [],
-        "produces_linear": false
-      },
-      "has_unsafe": false,
-      "constant_time": false,
-      "attributes": [],
-      "calls": [],
-      "declassifications": []
-    },
-    {
-      "name": "tab",
-      "source_name": "tab",
-      "container": null,
-      "source_container": null,
-      "source_module_index": null,
-      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:35:5",
-      "is_pub": true,
-      "doc": "Tab-separated values.",
-      "params": [],
-      "return_type": "Dialect",
-      "declared_capabilities": [],
-      "transitively_reachable_capabilities": [],
-      "provably_excluded_capabilities": [
-        "Clock",
-        "Db",
-        "Env",
-        "Fs",
-        "Logger",
-        "Net",
-        "Notifier",
-        "Proc",
-        "Random",
-        "Stdio",
-        "Unsafe"
-      ],
-      "linear_obligations": {
-        "consumes": [],
-        "produces_linear": false
-      },
-      "has_unsafe": false,
-      "constant_time": false,
-      "attributes": [],
-      "calls": [],
-      "declassifications": []
-    },
-    {
-      "name": "with_delimiter",
-      "source_name": "with_delimiter",
-      "container": null,
-      "source_container": null,
-      "source_module_index": null,
-      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:42:5",
-      "is_pub": true,
-      "doc": "A dialect with an arbitrary single-character delimiter. A\ndelimiter that is not exactly one character, or that is the\nquote character itself, is a programming error the parser\nrejects with `BadDialect` rather than misbehaving silently.",
-      "params": [
-        {
-          "name": "delim",
-          "type": "String",
-          "consuming": false,
-          "is_capability": false,
-          "is_linear": false
-        }
-      ],
-      "return_type": "Dialect",
-      "declared_capabilities": [],
-      "transitively_reachable_capabilities": [],
-      "provably_excluded_capabilities": [
-        "Clock",
-        "Db",
-        "Env",
-        "Fs",
-        "Logger",
-        "Net",
-        "Notifier",
-        "Proc",
-        "Random",
-        "Stdio",
-        "Unsafe"
-      ],
-      "linear_obligations": {
-        "consumes": [],
-        "produces_linear": false
-      },
-      "has_unsafe": false,
-      "constant_time": false,
-      "attributes": [],
-      "calls": [],
-      "declassifications": []
-    },
-    {
-      "name": "error_message",
-      "source_name": "error_message",
-      "container": null,
-      "source_container": null,
-      "source_module_index": null,
-      "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\model.capa:88:5",
-      "is_pub": true,
-      "doc": "A human-readable, backend-identical rendering of an error.\nPositions are 1-based record numbers, the unit an operator\nreasons about.",
-      "params": [
-        {
-          "name": "e",
-          "type": "CsvError",
-          "consuming": false,
-          "is_capability": false,
-          "is_linear": false
-        }
-      ],
-      "return_type": "String",
-      "declared_capabilities": [],
-      "transitively_reachable_capabilities": [],
-      "provably_excluded_capabilities": [
-        "Clock",
-        "Db",
-        "Env",
-        "Fs",
-        "Logger",
-        "Net",
-        "Notifier",
-        "Proc",
-        "Random",
-        "Stdio",
-        "Unsafe"
-      ],
-      "linear_obligations": {
-        "consumes": [],
-        "produces_linear": false
-      },
-      "has_unsafe": false,
-      "constant_time": false,
-      "attributes": [],
-      "calls": [],
       "declassifications": []
     },
     {
@@ -9817,7 +10639,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m18__encode_row",
+          "callee": "_capa_m20__encode_row",
           "pos": "27:21",
           "args": [
             "row.fields",
@@ -9875,7 +10697,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m18__encode_row",
+          "callee": "_capa_m20__encode_row",
           "pos": "34:12",
           "args": [
             "fields",
@@ -9940,7 +10762,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m18__encode_row",
+          "callee": "_capa_m20__encode_row",
           "pos": "38:12",
           "args": [
             "fields",
@@ -9955,11 +10777,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m18__encode_row",
+      "name": "_capa_m20__encode_row",
       "source_name": "encode_row",
       "container": null,
       "source_container": null,
-      "source_module_index": 18,
+      "source_module_index": 20,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\write.capa:40:1",
       "is_pub": false,
       "doc": null,
@@ -10005,7 +10827,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m18__encode_field",
+          "callee": "_capa_m20__encode_field",
           "pos": "45:19",
           "args": [
             "f",
@@ -10018,7 +10840,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m18__encode_field",
+          "callee": "_capa_m20__encode_field",
           "pos": "48:33",
           "args": [
             "f",
@@ -10033,11 +10855,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m18__encode_field",
+      "name": "_capa_m20__encode_field",
       "source_name": "encode_field",
       "container": null,
       "source_container": null,
-      "source_module_index": 18,
+      "source_module_index": 20,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\write.capa:51:1",
       "is_pub": false,
       "doc": null,
@@ -10083,7 +10905,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m18__needs_quoting",
+          "callee": "_capa_m20__needs_quoting",
           "pos": "52:8",
           "args": [
             "field",
@@ -10111,11 +10933,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m18__needs_quoting",
+      "name": "_capa_m20__needs_quoting",
       "source_name": "needs_quoting",
       "container": null,
       "source_container": null,
-      "source_module_index": 18,
+      "source_module_index": 20,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_csv\\write.capa:58:1",
       "is_pub": false,
       "doc": null,
@@ -11090,11 +11912,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m19__rate_per_10000",
+      "name": "_capa_m21__rate_per_10000",
       "source_name": "rate_per_10000",
       "container": null,
       "source_container": null,
-      "source_module_index": 19,
+      "source_module_index": 21,
       "pos": "fx.capa:42:1",
       "is_pub": false,
       "doc": null,
@@ -11134,11 +11956,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m19__apply_rate",
+      "name": "_capa_m21__apply_rate",
       "source_name": "apply_rate",
       "container": null,
       "source_container": null,
-      "source_module_index": 19,
+      "source_module_index": 21,
       "pos": "fx.capa:51:1",
       "is_pub": false,
       "doc": null,
@@ -11199,11 +12021,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m19__is_eur_currency",
+      "name": "_capa_m21__is_eur_currency",
       "source_name": "is_eur_currency",
       "container": null,
       "source_container": null,
-      "source_module_index": 19,
+      "source_module_index": 21,
       "pos": "fx.capa:60:1",
       "is_pub": false,
       "doc": null,
@@ -11286,11 +12108,11 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m19__apply_rate",
+          "callee": "_capa_m21__apply_rate",
           "pos": "70:12",
           "args": [
             "amount",
-            "_capa_m19__rate_per_10000(amount.currency)"
+            "_capa_m21__rate_per_10000(amount.currency)"
           ],
           "args_flow": [
             null,
@@ -11299,7 +12121,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m19__rate_per_10000",
+          "callee": "_capa_m21__rate_per_10000",
           "pos": "70:31",
           "args": [
             "amount.currency"
@@ -11312,11 +12134,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m19__parse_rate",
+      "name": "_capa_m21__parse_rate",
       "source_name": "parse_rate",
       "container": null,
       "source_container": null,
-      "source_module_index": 19,
+      "source_module_index": 21,
       "pos": "fx.capa:76:1",
       "is_pub": false,
       "doc": null,
@@ -11492,7 +12314,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m19__is_eur_currency",
+          "callee": "_capa_m21__is_eur_currency",
           "pos": "107:8",
           "args": [
             "amount.currency"
@@ -11543,7 +12365,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m19__parse_rate",
+          "callee": "_capa_m21__parse_rate",
           "pos": "111:16",
           "args": [
             "body"
@@ -11557,7 +12379,7 @@
           "callee": "Ok",
           "pos": "112:12",
           "args": [
-            "_capa_m19__apply_rate(amount, rate)"
+            "_capa_m21__apply_rate(amount, rate)"
           ],
           "args_flow": [
             null
@@ -11565,7 +12387,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m19__apply_rate",
+          "callee": "_capa_m21__apply_rate",
           "pos": "112:15",
           "args": [
             "amount",
@@ -11630,7 +12452,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m19__is_eur_currency",
+          "callee": "_capa_m21__is_eur_currency",
           "pos": "116:8",
           "args": [
             "original.currency"
@@ -11789,11 +12611,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m20__verdict_from_output",
+      "name": "_capa_m22__verdict_from_output",
       "source_name": "verdict_from_output",
       "container": null,
       "source_container": null,
-      "source_module_index": 20,
+      "source_module_index": 22,
       "pos": "scan.capa:58:1",
       "is_pub": false,
       "doc": null,
@@ -11950,7 +12772,7 @@
           "callee": "Ok",
           "pos": "82:12",
           "args": [
-            "_capa_m20__verdict_from_output(out)"
+            "_capa_m22__verdict_from_output(out)"
           ],
           "args_flow": [
             null
@@ -11958,7 +12780,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m20__verdict_from_output",
+          "callee": "_capa_m22__verdict_from_output",
           "pos": "82:15",
           "args": [
             "out"
@@ -12189,8 +13011,8 @@
       "declassifications": []
     },
     {
-      "name": "parse",
-      "source_name": "parse",
+      "name": "cli_parse",
+      "source_name": "cli_parse",
       "container": null,
       "source_container": null,
       "source_module_index": null,
@@ -12366,7 +13188,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__handle_long",
+          "callee": "_capa_m25__handle_long",
           "pos": "102:28",
           "args": [
             "schema",
@@ -12436,7 +13258,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__handle_short",
+          "callee": "_capa_m25__handle_short",
           "pos": "113:28",
           "args": [
             "schema",
@@ -12651,11 +13473,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__handle_long",
+      "name": "_capa_m25__handle_long",
       "source_name": "handle_long",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:151:1",
       "is_pub": false,
       "doc": null,
@@ -12817,7 +13639,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__find_option_long",
+          "callee": "_capa_m25__find_option_long",
           "pos": "168:17",
           "args": [
             "schema.options",
@@ -12876,7 +13698,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__find_flag_long",
+          "callee": "_capa_m25__find_flag_long",
           "pos": "176:13",
           "args": [
             "schema.flags",
@@ -12913,7 +13735,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__find_option_long",
+          "callee": "_capa_m25__find_option_long",
           "pos": "183:21",
           "args": [
             "schema.options",
@@ -13007,11 +13829,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__handle_short",
+      "name": "_capa_m25__handle_short",
       "source_name": "handle_short",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:193:1",
       "is_pub": false,
       "doc": null,
@@ -13085,7 +13907,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m23__find_flag_short",
+          "callee": "_capa_m25__find_flag_short",
           "pos": "201:13",
           "args": [
             "schema.flags",
@@ -13122,7 +13944,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__find_option_short",
+          "callee": "_capa_m25__find_option_short",
           "pos": "207:21",
           "args": [
             "schema.options",
@@ -13216,11 +14038,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__find_flag_long",
+      "name": "_capa_m25__find_flag_long",
       "source_name": "find_flag_long",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:217:1",
       "is_pub": false,
       "doc": null,
@@ -13279,11 +14101,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__find_flag_short",
+      "name": "_capa_m25__find_flag_short",
       "source_name": "find_flag_short",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:223:1",
       "is_pub": false,
       "doc": null,
@@ -13342,11 +14164,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__find_option_long",
+      "name": "_capa_m25__find_option_long",
       "source_name": "find_option_long",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:229:1",
       "is_pub": false,
       "doc": null,
@@ -13405,11 +14227,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__find_option_short",
+      "name": "_capa_m25__find_option_short",
       "source_name": "find_option_short",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:235:1",
       "is_pub": false,
       "doc": null,
@@ -13539,7 +14361,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__pad_name",
+          "callee": "_capa_m25__pad_name",
           "pos": "274:30",
           "args": [
             "p.name.to_upper()"
@@ -13564,7 +14386,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__flag_label",
+          "callee": "_capa_m25__flag_label",
           "pos": "278:30",
           "args": [
             "f"
@@ -13582,7 +14404,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m23__opt_label",
+          "callee": "_capa_m25__opt_label",
           "pos": "285:30",
           "args": [
             "o"
@@ -13595,11 +14417,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__pad_name",
+      "name": "_capa_m25__pad_name",
       "source_name": "pad_name",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:288:1",
       "is_pub": false,
       "doc": null,
@@ -13638,7 +14460,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m23__spaces",
+          "callee": "_capa_m25__spaces",
           "pos": "289:22",
           "args": [
             "20",
@@ -13660,11 +14482,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__flag_label",
+      "name": "_capa_m25__flag_label",
       "source_name": "flag_label",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:291:1",
       "is_pub": false,
       "doc": null,
@@ -13703,7 +14525,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m23__pad_name",
+          "callee": "_capa_m25__pad_name",
           "pos": "295:12",
           "args": [
             "head"
@@ -13716,11 +14538,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__opt_label",
+      "name": "_capa_m25__opt_label",
       "source_name": "opt_label",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:297:1",
       "is_pub": false,
       "doc": null,
@@ -13759,7 +14581,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m23__pad_name",
+          "callee": "_capa_m25__pad_name",
           "pos": "301:12",
           "args": [
             "head"
@@ -13772,11 +14594,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m23__spaces",
+      "name": "_capa_m25__spaces",
       "source_name": "spaces",
       "container": null,
       "source_container": null,
-      "source_module_index": 23,
+      "source_module_index": 25,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_cli\\parser.capa:303:1",
       "is_pub": false,
       "doc": null,
@@ -13828,7 +14650,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "cli.capa:33:5",
+      "pos": "cli.capa:38:5",
       "is_pub": true,
       "doc": null,
       "params": [],
@@ -13859,7 +14681,7 @@
         {
           "kind": "method",
           "callee": "flags.push",
-          "pos": "35:5",
+          "pos": "40:5",
           "args": [
             "Flag { long: \"live\", short: \"\", help: \"make the real Net/Proc calls (non-dete..."
           ],
@@ -13870,7 +14692,7 @@
         {
           "kind": "method",
           "callee": "options.push",
-          "pos": "38:5",
+          "pos": "43:5",
           "args": [
             "Opt { long: \"input\", short: \"i\", help: \"claim batch CSV path\", required: false }"
           ],
@@ -13881,7 +14703,7 @@
         {
           "kind": "method",
           "callee": "options.push",
-          "pos": "39:5",
+          "pos": "44:5",
           "args": [
             "Opt { long: \"reporter\", short: \"r\", help: \"report format: text | csv | json\",..."
           ],
@@ -13893,12 +14715,12 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m22__config_from_parsed",
+      "name": "_capa_m24__config_from_parsed",
       "source_name": "config_from_parsed",
       "container": null,
       "source_container": null,
-      "source_module_index": 22,
-      "pos": "cli.capa:60:1",
+      "source_module_index": 24,
+      "pos": "cli.capa:65:1",
       "is_pub": false,
       "doc": null,
       "params": [
@@ -13937,7 +14759,7 @@
         {
           "kind": "method",
           "callee": "parsed.options.get",
-          "pos": "61:23",
+          "pos": "66:23",
           "args": [
             "\"input\""
           ],
@@ -13948,7 +14770,7 @@
         {
           "kind": "method",
           "callee": "parsed.options.get",
-          "pos": "64:26",
+          "pos": "69:26",
           "args": [
             "\"reporter\""
           ],
@@ -13959,7 +14781,7 @@
         {
           "kind": "method",
           "callee": "parsed.flags.get",
-          "pos": "67:22",
+          "pos": "72:22",
           "args": [
             "\"live\""
           ],
@@ -13976,7 +14798,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "cli.capa:74:5",
+      "pos": "cli.capa:79:5",
       "is_pub": true,
       "doc": null,
       "params": [
@@ -14015,14 +14837,14 @@
         {
           "kind": "fn",
           "callee": "build_schema",
-          "pos": "75:18",
+          "pos": "80:18",
           "args": [],
           "args_flow": []
         },
         {
           "kind": "fn",
-          "callee": "parse",
-          "pos": "76:18",
+          "callee": "cli_parse",
+          "pos": "81:18",
           "args": [
             "schema",
             "args"
@@ -14035,9 +14857,9 @@
         {
           "kind": "fn",
           "callee": "Run",
-          "pos": "77:31",
+          "pos": "82:31",
           "args": [
-            "_capa_m22__config_from_parsed(parsed)"
+            "_capa_m24__config_from_parsed(parsed)"
           ],
           "args_flow": [
             null
@@ -14045,8 +14867,8 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m22__config_from_parsed",
-          "pos": "77:35",
+          "callee": "_capa_m24__config_from_parsed",
+          "pos": "82:35",
           "args": [
             "parsed"
           ],
@@ -14057,7 +14879,7 @@
         {
           "kind": "fn",
           "callee": "ArgsError",
-          "pos": "79:31",
+          "pos": "84:31",
           "args": [
             "\"missing required argument '${...}'\""
           ],
@@ -14068,7 +14890,7 @@
         {
           "kind": "fn",
           "callee": "ArgsError",
-          "pos": "80:31",
+          "pos": "85:31",
           "args": [
             "\"unrecognised argument '${...}'\""
           ],
@@ -14079,7 +14901,7 @@
         {
           "kind": "fn",
           "callee": "ArgsError",
-          "pos": "81:31",
+          "pos": "86:31",
           "args": [
             "\"option '${...}' needs a value\""
           ],
@@ -14096,7 +14918,7 @@
       "container": null,
       "source_container": null,
       "source_module_index": null,
-      "pos": "cli.capa:85:5",
+      "pos": "cli.capa:90:5",
       "is_pub": true,
       "doc": null,
       "params": [],
@@ -14127,7 +14949,7 @@
         {
           "kind": "fn",
           "callee": "format_help",
-          "pos": "86:12",
+          "pos": "91:12",
           "args": [
             "build_schema()"
           ],
@@ -14138,7 +14960,7 @@
         {
           "kind": "fn",
           "callee": "build_schema",
-          "pos": "86:24",
+          "pos": "91:24",
           "args": [],
           "args_flow": []
         }
@@ -14690,7 +15512,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv_float",
+          "callee": "_capa_m28__idiv_float",
           "pos": "52:22",
           "args": [
             "secs",
@@ -14703,7 +15525,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "53:16",
           "args": [
             "total_secs",
@@ -14716,7 +15538,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "55:16",
           "args": [
             "day_remainder",
@@ -14729,7 +15551,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "57:18",
           "args": [
             "after_hour",
@@ -14742,7 +15564,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "63:15",
           "args": [
             "z",
@@ -14755,10 +15577,10 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "65:15",
           "args": [
-            "doe - _capa_m26__idiv(doe, 1460) + _capa_m26__idiv(doe, 36524) - _capa_m26__i...",
+            "doe - _capa_m28__idiv(doe, 1460) + _capa_m28__idiv(doe, 36524) - _capa_m28__i...",
             "365"
           ],
           "args_flow": [
@@ -14768,7 +15590,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "65:26",
           "args": [
             "doe",
@@ -14781,7 +15603,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "65:44",
           "args": [
             "doe",
@@ -14794,7 +15616,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "65:63",
           "args": [
             "doe",
@@ -14807,7 +15629,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "67:34",
           "args": [
             "yoe",
@@ -14820,7 +15642,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "67:49",
           "args": [
             "yoe",
@@ -14833,7 +15655,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "68:14",
           "args": [
             "5 * doy + 2",
@@ -14846,7 +15668,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "69:19",
           "args": [
             "153 * mp + 2",
@@ -14904,7 +15726,7 @@
       "calls": [
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "92:15",
           "args": [
             "y",
@@ -14917,7 +15739,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "97:15",
           "args": [
             "153 * m_adj + 2",
@@ -14930,7 +15752,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "98:27",
           "args": [
             "yoe",
@@ -14943,7 +15765,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__idiv",
+          "callee": "_capa_m28__idiv",
           "pos": "98:42",
           "args": [
             "yoe",
@@ -15023,7 +15845,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad4",
+          "callee": "_capa_m28__pad4",
           "pos": "109:15",
           "args": [
             "c.year"
@@ -15034,7 +15856,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "109:31",
           "args": [
             "c.month"
@@ -15045,7 +15867,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "109:48",
           "args": [
             "c.day"
@@ -15056,7 +15878,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "109:63",
           "args": [
             "c.hour"
@@ -15067,7 +15889,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "109:79",
           "args": [
             "c.minute"
@@ -15078,7 +15900,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "109:97",
           "args": [
             "c.second"
@@ -15145,7 +15967,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad4",
+          "callee": "_capa_m28__pad4",
           "pos": "113:15",
           "args": [
             "c.year"
@@ -15156,7 +15978,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "113:31",
           "args": [
             "c.month"
@@ -15167,7 +15989,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "113:48",
           "args": [
             "c.day"
@@ -15234,7 +16056,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "117:15",
           "args": [
             "c.hour"
@@ -15245,7 +16067,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "117:31",
           "args": [
             "c.minute"
@@ -15256,7 +16078,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__pad2",
+          "callee": "_capa_m28__pad2",
           "pos": "117:49",
           "args": [
             "c.second"
@@ -15348,7 +16170,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__parse_int_substring",
+          "callee": "_capa_m28__parse_int_substring",
           "pos": "131:16",
           "args": [
             "s",
@@ -15363,7 +16185,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__expect_char",
+          "callee": "_capa_m28__expect_char",
           "pos": "132:14",
           "args": [
             "s",
@@ -15378,7 +16200,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__parse_int_substring",
+          "callee": "_capa_m28__parse_int_substring",
           "pos": "133:17",
           "args": [
             "s",
@@ -15393,7 +16215,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__expect_char",
+          "callee": "_capa_m28__expect_char",
           "pos": "134:14",
           "args": [
             "s",
@@ -15408,7 +16230,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__parse_int_substring",
+          "callee": "_capa_m28__parse_int_substring",
           "pos": "135:15",
           "args": [
             "s",
@@ -15423,7 +16245,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__expect_char",
+          "callee": "_capa_m28__expect_char",
           "pos": "136:14",
           "args": [
             "s",
@@ -15438,7 +16260,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__parse_int_substring",
+          "callee": "_capa_m28__parse_int_substring",
           "pos": "137:16",
           "args": [
             "s",
@@ -15453,7 +16275,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__expect_char",
+          "callee": "_capa_m28__expect_char",
           "pos": "138:14",
           "args": [
             "s",
@@ -15468,7 +16290,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__parse_int_substring",
+          "callee": "_capa_m28__parse_int_substring",
           "pos": "139:18",
           "args": [
             "s",
@@ -15483,7 +16305,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__expect_char",
+          "callee": "_capa_m28__expect_char",
           "pos": "140:14",
           "args": [
             "s",
@@ -15498,7 +16320,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__parse_int_substring",
+          "callee": "_capa_m28__parse_int_substring",
           "pos": "141:18",
           "args": [
             "s",
@@ -15513,7 +16335,7 @@
         },
         {
           "kind": "fn",
-          "callee": "_capa_m26__expect_char",
+          "callee": "_capa_m28__expect_char",
           "pos": "142:14",
           "args": [
             "s",
@@ -15552,11 +16374,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m26__idiv",
+      "name": "_capa_m28__idiv",
       "source_name": "idiv",
       "container": null,
       "source_container": null,
-      "source_module_index": 26,
+      "source_module_index": 28,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_datetime\\datetime.capa:161:1",
       "is_pub": false,
       "doc": null,
@@ -15637,11 +16459,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m26__idiv_float",
+      "name": "_capa_m28__idiv_float",
       "source_name": "idiv_float",
       "container": null,
       "source_container": null,
-      "source_module_index": 26,
+      "source_module_index": 28,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_datetime\\datetime.capa:166:1",
       "is_pub": false,
       "doc": null,
@@ -15700,11 +16522,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m26__pad2",
+      "name": "_capa_m28__pad2",
       "source_name": "pad2",
       "container": null,
       "source_container": null,
-      "source_module_index": 26,
+      "source_module_index": 28,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_datetime\\datetime.capa:169:1",
       "is_pub": false,
       "doc": null,
@@ -15744,11 +16566,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m26__pad4",
+      "name": "_capa_m28__pad4",
       "source_name": "pad4",
       "container": null,
       "source_container": null,
-      "source_module_index": 26,
+      "source_module_index": 28,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_datetime\\datetime.capa:174:1",
       "is_pub": false,
       "doc": null,
@@ -15788,11 +16610,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m26__parse_int_substring",
+      "name": "_capa_m28__parse_int_substring",
       "source_name": "parse_int_substring",
       "container": null,
       "source_container": null,
-      "source_module_index": 26,
+      "source_module_index": 28,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_datetime\\datetime.capa:183:1",
       "is_pub": false,
       "doc": null,
@@ -15904,11 +16726,11 @@
       "declassifications": []
     },
     {
-      "name": "_capa_m26__expect_char",
+      "name": "_capa_m28__expect_char",
       "source_name": "expect_char",
       "container": null,
       "source_container": null,
-      "source_module_index": 26,
+      "source_module_index": 28,
       "pos": "C:\\Users\\nelso\\Desktop\\repos\\capa_datetime\\datetime.capa:189:1",
       "is_pub": false,
       "doc": null,
@@ -19140,7 +19962,7 @@
     }
   ],
   "summary": {
-    "total_functions": 205,
+    "total_functions": 213,
     "functions_with_capabilities": 26,
     "functions_with_attributes": 9,
     "functions_crossing_unsafe": 0,
