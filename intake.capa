@@ -43,7 +43,7 @@
 import capa_claimdesk.money
 import capa_claimdesk.domain
 import capa_csv.header (parse_headed as csv_parse_headed, HeaderTable)
-import capa_csv.model (CsvError, error_message)
+import capa_csv.model
 
 // The import error channel. All domain-level failures intake can detect.
 pub type IntakeError =
