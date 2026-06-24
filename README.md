@@ -1,7 +1,7 @@
 # capa_claimdesk
 
 An enterprise expense-reimbursement processing engine with an approval
-workflow, written in [Capa](https://github.com/nelsonduarte/Capa_language).
+workflow, written in [Capa](https://github.com/nelsonduarte/capa-language).
 
 claimdesk takes an employee's expense claim from draft to payout and
 makes the hard parts of that process unrepresentable rather than merely
